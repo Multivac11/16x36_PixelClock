@@ -1,13 +1,16 @@
 set(src_dirs
     status_led
+    key
 )
 
 set(include_dirs
     status_led
+    key
 )
 
 set(required_components
     driver
+    esp_timer
 )
 
 idf_component_register(

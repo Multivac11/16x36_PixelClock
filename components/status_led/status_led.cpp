@@ -86,14 +86,26 @@ void StatusLed::SystemError()
 
 void StatusLed::NetworkScanning()
 {
+    LedOn(led_pin_[0]);
+    vTaskDelay(pdMS_TO_TICKS(50));
+    LedOff(led_pin_[0]);
+    vTaskDelay(pdMS_TO_TICKS(50));
 }
 
 void StatusLed::NetworkAPmode()
 {
+    LedOn(led_pin_[0]);
+    vTaskDelay(pdMS_TO_TICKS(150));
+    LedOff(led_pin_[0]);
+    vTaskDelay(pdMS_TO_TICKS(150));
 }
 
 void StatusLed::NetworkOnline()
 {
+    LedOn(led_pin_[0]);
+    vTaskDelay(pdMS_TO_TICKS(1200));
+    LedOff(led_pin_[0]);
+    vTaskDelay(pdMS_TO_TICKS(1200));
 }
 
 void StatusLed::LedOn(gpio_num_t led_gpio)
