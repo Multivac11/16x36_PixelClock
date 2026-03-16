@@ -22,6 +22,7 @@ void StatusKey::InitKeys()
 
     queue_ = xQueueCreate(1, sizeof(Event));
     xTaskCreatePinnedToCore(GetKeyTask, "GetKeyTask", 2048, this, 2, nullptr, 1);
+    ESP_LOGI("Key", "InitKeys successfull");
 }
 
 void StatusKey::GetKeyTask(void *pvParameters)

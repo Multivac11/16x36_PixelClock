@@ -20,6 +20,7 @@ void StatusLed::InitStatusLed()
     xTaskCreatePinnedToCore(GetStatusTask, "GetStatusTask", 2048, this, 1, nullptr, 1);
     xTaskCreatePinnedToCore(SetNetworkStatusTask, "SetStatusTask", 2048, this, 1, nullptr, 1);
     xTaskCreatePinnedToCore(SetSystemStatusTask, "SetSystemStatusTask", 2048, this, 1, nullptr, 1);
+    ESP_LOGI("StatusLed", "InitStatusLed successfull");
 }
 
 void StatusLed::SetNetworkStatusTask(void *pvParameters)

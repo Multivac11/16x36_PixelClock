@@ -14,5 +14,6 @@
     "--query-driver=**",
     "--compile-commands-dir=/home/tianyu/tianyu/16x36_PixelClock/build"
   ],
-  "idf.flashType": "UART"
+  "idf.flashType": "UART",
+  "C_Cpp.errorSquiggles": "enabled"
 }
