@@ -5,6 +5,7 @@ set(src_dirs
     I2C
     audio_capture
     light_sensor
+    ws_matrix
 )
 
 set(include_dirs
@@ -14,6 +15,7 @@ set(include_dirs
     I2C
     audio_capture
     light_sensor
+    ws_matrix
 )
 
 set(required_components

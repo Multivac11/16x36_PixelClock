@@ -6,6 +6,7 @@
 #include "light_sensor.h"
 #include "sht40.h"
 #include "status_led.h"
+#include "ws_matrix.h"
 
 // TODO:修改测光adc口为GPIO1
 extern "C" void app_main(void)
