@@ -1,10 +1,11 @@
 #pragma once
 
+#include <cmath>
+
 #include "driver/i2s_std.h"
+#include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "esp_log.h"
-#include <cmath>
 
 #define SAMPLE_RATE (44100)
 
@@ -16,7 +17,7 @@
 
 class AudioCapture
 {
-public:
+   public:
     static AudioCapture &GetInstance()
     {
         static AudioCapture instance;
@@ -28,13 +29,13 @@ public:
 
     void InitAudioCapture();
 
-private:
+   private:
     static void AudioCaptureTask(void *);
     void I2sInstall();
     void I2sSetPin();
     void GetAudios();
 
-private:
+   private:
     QueueHandle_t queue_;
     i2s_std_config_t i2s_config_;
     uint32_t buffer_[bufferLen];

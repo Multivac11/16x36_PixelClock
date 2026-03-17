@@ -1,14 +1,15 @@
 #pragma once
 
 #include <stdio.h>
+
 #include "driver/gpio.h"
+#include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "esp_log.h"
 
 class StatusLed
 {
-public:
+   public:
     static StatusLed &GetInstance()
     {
         static StatusLed instance;
@@ -34,7 +35,7 @@ public:
 
     void InitStatusLed();
 
-private:
+   private:
     static void SetNetworkStatusTask(void *);
 
     static void SetSystemStatusTask(void *);
@@ -63,7 +64,7 @@ private:
 
     void SystemError();
 
-private:
+   private:
     gpio_num_t led_pin_[2];
     NetworkLedStatusEnum network_led_status_ = STATUS_NETWOIRK_SCANING;
     SystemLedStatusEnum system_led_status_ = STATUS_SYSTEM_NORMAL;

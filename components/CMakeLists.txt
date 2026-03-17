@@ -4,6 +4,7 @@ set(src_dirs
     sht40
     I2C
     audio_capture
+    light_sensor
 )
 
 set(include_dirs
@@ -12,6 +13,7 @@ set(include_dirs
     sht40
     I2C
     audio_capture
+    light_sensor
 )
 
 set(required_components

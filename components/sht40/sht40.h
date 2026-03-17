@@ -1,16 +1,16 @@
 #pragma once
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
 #include "driver/i2c_master.h"
 #include "esp_log.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
 #define SHT40_ADDR 0x44
 #define I2C_MASTER_FREQ_HZ 100000
 
 class Sht40
 {
-public:
+   public:
     static Sht40 &GetInstance()
     {
         static Sht40 instance;
@@ -30,16 +30,14 @@ public:
     bool Available();
     EnvParamsStruct ReadEnvParams();
 
-private:
+   private:
     static void GetEnvParamsTask(void *);
 
     void GetEnvParams();
 
     void ReadRawData(uint8_t *data);
 
-private:
+   private:
     EnvParamsStruct env_params_;
     QueueHandle_t queue_;
-    // i2c_master_bus_handle_t bus_handle_;
-    // i2c_master_dev_handle_t dev_handle_;
 };

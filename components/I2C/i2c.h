@@ -1,9 +1,9 @@
 #pragma once
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
 #include "driver/i2c_master.h"
 #include "esp_log.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
 #define I2C_MASTER_SCL_IO GPIO_NUM_47 /*!< GPIO number used for I2C master clock */
 #define I2C_MASTER_SDA_IO GPIO_NUM_48 /*!< GPIO number used for I2C master data  */
@@ -15,7 +15,7 @@
 
 class I2CMaster
 {
-public:
+   public:
     static I2CMaster &GetInstance()
     {
         static I2CMaster instance;
@@ -27,7 +27,7 @@ public:
 
     void InitI2C();
 
-public:
+   public:
     i2c_master_bus_handle_t bus_handle_;
     i2c_master_dev_handle_t dev_handle_;
 };

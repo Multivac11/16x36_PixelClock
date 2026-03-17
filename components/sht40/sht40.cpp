@@ -1,4 +1,5 @@
 #include "sht40.h"
+
 #include "i2c.h"
 
 void Sht40::InitSht40()
@@ -17,14 +18,14 @@ void Sht40::InitSht40()
 
     ESP_LOGI("Sht40", "Found SHT40 sensor at address 0x%02X", SHT40_ADDR);
 
-    i2c_device_config_t dev_config = {
-        .dev_addr_length = I2C_ADDR_BIT_LEN_7,
-        .device_address = SHT40_ADDR,
-        .scl_speed_hz = I2C_MASTER_FREQ_HZ,
-        .scl_wait_us = 100,
-        .flags = {.disable_ack_check = true}};
+    i2c_device_config_t dev_config = {.dev_addr_length = I2C_ADDR_BIT_LEN_7,
+                                      .device_address = SHT40_ADDR,
+                                      .scl_speed_hz = I2C_MASTER_FREQ_HZ,
+                                      .scl_wait_us = 100,
+                                      .flags = {.disable_ack_check = true}};
 
-    ret = i2c_master_bus_add_device(I2CMaster::GetInstance().bus_handle_, &dev_config, &I2CMaster::GetInstance().dev_handle_);
+    ret = i2c_master_bus_add_device(I2CMaster::GetInstance().bus_handle_, &dev_config,
+                                    &I2CMaster::GetInstance().dev_handle_);
     if (ret != ESP_OK)
     {
         ESP_LOGE("Sht40", "Failed to add SHT40 sensor to I2C bus");
@@ -54,7 +55,7 @@ void Sht40::GetEnvParams()
         uint16_t recovery_hum = ((uint16_t)buffer[3] << 8) | buffer[4];
         env_params_.humidity = -6 + 125 * ((float)recovery_hum / 65535);
 
-        if (env_params_.humidity >= 100) // 根据数据手册编写
+        if (env_params_.humidity >= 100)  // 根据数据手册编写
         {
             env_params_.humidity = 100;
         }
@@ -71,7 +72,7 @@ void Sht40::GetEnvParams()
 
 void Sht40::ReadRawData(uint8_t *data)
 {
-    uint8_t controlid = 0xFD; // 读取数据指令
+    uint8_t controlid = 0xFD;  // 读取数据指令
     uint8_t ret;
     ret = i2c_master_transmit(I2CMaster::GetInstance().dev_handle_, &controlid, 1, -1);
     if (ret != ESP_OK)

@@ -20,18 +20,20 @@ void AudioCapture::I2sInstall()
     i2s_config_ = {
         .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(SAMPLE_RATE),
         .slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_32BIT, I2S_SLOT_MODE_MONO),
-        .gpio_cfg = {
-            .mclk = I2S_GPIO_UNUSED,
-            .bclk = I2S_MIC_BCK,
-            .ws = I2S_MIC_WS,
-            .dout = I2S_GPIO_UNUSED,
-            .din = I2S_MIC_SD,
-            .invert_flags = {
-                .mclk_inv = false,
-                .bclk_inv = false,
-                .ws_inv = false,
+        .gpio_cfg =
+            {
+                .mclk = I2S_GPIO_UNUSED,
+                .bclk = I2S_MIC_BCK,
+                .ws = I2S_MIC_WS,
+                .dout = I2S_GPIO_UNUSED,
+                .din = I2S_MIC_SD,
+                .invert_flags =
+                    {
+                        .mclk_inv = false,
+                        .bclk_inv = false,
+                        .ws_inv = false,
+                    },
             },
-        },
     };
 
     i2s_config_.slot_cfg.slot_mask = I2S_STD_SLOT_LEFT;
