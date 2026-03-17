@@ -3,6 +3,7 @@ set(src_dirs
     key
     sht40
     I2C
+    audio_capture
 )
 
 set(include_dirs
@@ -10,6 +11,7 @@ set(include_dirs
     key
     sht40
     I2C
+    audio_capture
 )
 
 set(required_components

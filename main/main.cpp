@@ -3,6 +3,7 @@
 #include "key.h"
 #include "sht40.h"
 #include "i2c.h"
+#include "audio_capture.h"
 
 extern "C" void app_main(void)
 {
@@ -10,4 +11,5 @@ extern "C" void app_main(void)
     StatusKey::GetInstance().InitKeys();
     I2CMaster::GetInstance().InitI2C();
     Sht40::GetInstance().InitSht40();
+    AudioCapture::GetInstance().InitAudioCapture();
 }
