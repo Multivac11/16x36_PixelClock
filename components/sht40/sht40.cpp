@@ -4,34 +4,11 @@
 
 void Sht40::InitSht40()
 {
-    esp_err_t ret = i2c_master_probe(I2CMaster::GetInstance().bus_handle_, SHT40_ADDR, -1);
-    if (ret == ESP_ERR_NOT_FOUND)
+    if (!RegisterSht40())
     {
-        ESP_LOGE("Sht40", "Failed to find SHT40 sensor");
+        ESP_LOGE("Sht40", "Failed to register SHT40 sensor");
         return;
     }
-    else if (ret == ESP_ERR_TIMEOUT)
-    {
-        ESP_LOGE("Sht40", "Failed to find SHT40 sensor, timeout");
-        return;
-    }
-
-    ESP_LOGI("Sht40", "Found SHT40 sensor at address 0x%02X", SHT40_ADDR);
-
-    i2c_device_config_t dev_config = {.dev_addr_length = I2C_ADDR_BIT_LEN_7,
-                                      .device_address = SHT40_ADDR,
-                                      .scl_speed_hz = I2C_MASTER_FREQ_HZ,
-                                      .scl_wait_us = 100,
-                                      .flags = {.disable_ack_check = true}};
-
-    ret = i2c_master_bus_add_device(I2CMaster::GetInstance().bus_handle_, &dev_config,
-                                    &I2CMaster::GetInstance().dev_handle_);
-    if (ret != ESP_OK)
-    {
-        ESP_LOGE("Sht40", "Failed to add SHT40 sensor to I2C bus");
-        return;
-    }
-
     queue_ = xQueueCreate(1, sizeof(EnvParamsStruct));
     xTaskCreatePinnedToCore(GetEnvParamsTask, "GetEnvParamsTask", 4096, this, 1, nullptr, 1);
 
@@ -68,6 +45,38 @@ void Sht40::GetEnvParams()
         // ESP_LOGI("Sht40", "temperature: %.2f, humidity: %.2f", env_params_.temperature, env_params_.humidity);
         vTaskDelay(pdMS_TO_TICKS(3000));
     }
+}
+
+bool Sht40::RegisterSht40()
+{
+    esp_err_t ret = i2c_master_probe(I2CMaster::GetInstance().bus_handle_, SHT40_ADDR, -1);
+    if (ret == ESP_ERR_NOT_FOUND)
+    {
+        ESP_LOGE("Sht40", "Failed to find SHT40 sensor");
+        return false;
+    }
+    else if (ret == ESP_ERR_TIMEOUT)
+    {
+        ESP_LOGE("Sht40", "Failed to find SHT40 sensor, timeout");
+        return false;
+    }
+
+    ESP_LOGI("Sht40", "Found SHT40 sensor at address 0x%02X", SHT40_ADDR);
+
+    i2c_device_config_t dev_config = {.dev_addr_length = I2C_ADDR_BIT_LEN_7,
+                                      .device_address = SHT40_ADDR,
+                                      .scl_speed_hz = I2C_MASTER_FREQ_HZ,
+                                      .scl_wait_us = 100,
+                                      .flags = {.disable_ack_check = true}};
+
+    ret = i2c_master_bus_add_device(I2CMaster::GetInstance().bus_handle_, &dev_config,
+                                    &I2CMaster::GetInstance().dev_handle_);
+    if (ret != ESP_OK)
+    {
+        ESP_LOGE("Sht40", "Failed to add SHT40 sensor to I2C bus");
+        return false;
+    }
+    return true;
 }
 
 void Sht40::ReadRawData(uint8_t *data)

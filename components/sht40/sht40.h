@@ -37,6 +37,8 @@ class Sht40
 
     void ReadRawData(uint8_t *data);
 
+    bool RegisterSht40();
+
    private:
     EnvParamsStruct env_params_;
     QueueHandle_t queue_;

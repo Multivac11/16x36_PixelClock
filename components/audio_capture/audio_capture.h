@@ -31,8 +31,9 @@ class AudioCapture
 
    private:
     static void AudioCaptureTask(void *);
-    void I2sInstall();
-    void I2sSetPin();
+
+    bool RegisterI2sDevice();
+
     void GetAudios();
 
    private:

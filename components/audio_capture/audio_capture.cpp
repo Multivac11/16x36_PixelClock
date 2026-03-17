@@ -2,19 +2,23 @@
 
 void AudioCapture::InitAudioCapture()
 {
-    I2sInstall();
+    if (!RegisterI2sDevice())
+    {
+        ESP_LOGE("AudioCapture", "Failed to register I2S device");
+        return;
+    }
     xTaskCreatePinnedToCore(AudioCaptureTask, "AudioCaptureTask", 4096, this, 1, nullptr, 1);
     ESP_LOGI("AudioCapture", "Init AudioCapture module successfull!");
 }
 
-void AudioCapture::I2sInstall()
+bool AudioCapture::RegisterI2sDevice()
 {
     i2s_chan_config_t rx_chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_0, I2S_ROLE_MASTER);
     esp_err_t ret = i2s_new_channel(&rx_chan_cfg, NULL, &rx_chan_);
     if (ret != ESP_OK)
     {
         ESP_LOGI("AudioCapture", "i2s_new_channel failed: %s", esp_err_to_name(ret));
-        return;
+        return false;
     }
 
     i2s_config_ = {
@@ -41,15 +45,16 @@ void AudioCapture::I2sInstall()
     if (ret != ESP_OK)
     {
         ESP_LOGI("AudioCapture", "i2s_channel_init_std_mode failed: %s", esp_err_to_name(ret));
-        return;
+        return false;
     }
 
     ret = i2s_channel_enable(rx_chan_);
     if (ret != ESP_OK)
     {
         ESP_LOGI("AudioCapture", "i2s_channel_enable failed: %s", esp_err_to_name(ret));
-        return;
+        return false;
     }
+    return true;
 }
 
 void AudioCapture::AudioCaptureTask(void *pvParameters)

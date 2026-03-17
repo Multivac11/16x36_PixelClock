@@ -20,6 +20,7 @@ set(required_components
     driver
     esp_timer
     esp_driver_i2c
+    esp_adc
 )
 
 idf_component_register(
