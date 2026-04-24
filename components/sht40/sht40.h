@@ -27,7 +27,9 @@ class Sht40
     };
 
     void InitSht40();
+
     bool Available();
+
     EnvParamsStruct ReadEnvParams();
 
    private:
@@ -41,5 +43,6 @@ class Sht40
 
    private:
     EnvParamsStruct env_params_;
+
     QueueHandle_t queue_;
 };

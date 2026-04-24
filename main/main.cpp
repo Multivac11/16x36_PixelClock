@@ -1,5 +1,6 @@
 #include <stdio.h>
 
+#include "ap_wifi.h"
 #include "audio_capture.h"
 #include "i2c.h"
 #include "key.h"
@@ -17,4 +18,5 @@ extern "C" void app_main(void)
     Sht40::GetInstance().InitSht40();
     AudioCapture::GetInstance().InitAudioCapture();
     LightSensor::GetInstance().InitLightSensor();
+    ApWifi::GetInstance().ApWifiInit();
 }

@@ -6,6 +6,7 @@ set(src_dirs
     audio_capture
     light_sensor
     ws_matrix
+    wifi_manager
 )
 
 set(include_dirs
@@ -16,6 +17,7 @@ set(include_dirs
     audio_capture
     light_sensor
     ws_matrix
+    wifi_manager
 )
 
 set(required_components
@@ -23,6 +25,13 @@ set(required_components
     esp_timer
     esp_driver_i2c
     esp_adc
+    esp_event
+    esp_wifi
+    esp_http_server
+    spiffs
+    nvs_flash
+    lwip
+    json
 )
 
 idf_component_register(

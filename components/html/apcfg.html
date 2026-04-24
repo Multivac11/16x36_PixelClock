@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PIXEL CLOCK CONFIG · GAME STYLE</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+    <style>
+        /* ========== 红白蓝 游戏机主题 ========== */
+        :root {
+            --game-red: #e12c2c;
+            --game-red-dark: #aa1f1f;
+            --game-red-light: #f86b6b;
+            --game-blue: #2c6eef;
+            --game-blue-dark: #1a4bbf;
+            --game-blue-light: #6a9eff;
+            --game-white: #ffffff;
+            --game-white-off: #f5f5f5;
+            --game-border: #0f0f1e;
+            --game-text: #0a0a17;
+            --game-text-dim: #4a4a5e;
+
+            --shadow-red: #c41e1e;
+            --shadow-blue: #1e40af;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            image-rendering: pixelated;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'VT323', monospace;
+            background: var(--game-white);
+            color: var(--game-text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background-image:
+                linear-gradient(rgba(225, 44, 44, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(44, 110, 239, 0.04) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        .container {
+            background: var(--game-white);
+            width: 100%;
+            max-width: 500px;
+            border: 4px solid var(--game-border);
+            box-shadow: 6px 6px 0 0 var(--game-red-dark), -2px -2px 0 0 var(--game-blue-dark);
+            position: relative;
+        }
+
+        .header {
+            background: var(--game-red);
+            padding: 22px 20px;
+            text-align: center;
+            border-bottom: 4px solid var(--game-border);
+        }
+
+        .header h1 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 14px;
+            color: var(--game-white);
+            line-height: 1.6;
+            letter-spacing: 1px;
+            text-shadow: 3px 3px 0 var(--game-red-dark);
+        }
+
+        .header p {
+            font-size: 22px;
+            color: #fff5e0;
+            margin-top: 8px;
+            text-shadow: 2px 2px 0 var(--game-red-dark);
+        }
+
+        .content {
+            padding: 20px;
+        }
+
+        /* 按钮通用样式（保留原有键位感） */
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: 4px solid var(--game-border);
+            background: var(--game-white-off);
+            color: var(--game-text);
+            font-family: 'VT323', monospace;
+            font-size: 24px;
+            cursor: pointer;
+            outline: none;
+            text-transform: uppercase;
+            position: relative;
+            z-index: 2;
+            box-shadow: inset 0 6px 0 0 rgba(255, 255, 255, 0.85);
+            transform: translateY(-8px);
+            transition: all 0.07s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn::after {
+            content: '';
+            position: absolute;
+            left: -4px;
+            right: -4px;
+            top: calc(100% - 4px);
+            height: 8px;
+            background: #a0a0b0;
+            border: 4px solid var(--game-border);
+            border-top: none;
+            z-index: -1;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+            transition: all 0.07s;
+        }
+
+        .content .btn {
+            margin-bottom: 20px;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-10px);
+        }
+
+        .btn:hover:not(:disabled)::after {
+            height: 10px;
+        }
+
+        .btn:active:not(:disabled) {
+            transform: translateY(0);
+            box-shadow: inset 0 5px 0 0 rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:active:not(:disabled)::after {
+            height: 0;
+            opacity: 0;
+        }
+
+        .btn:disabled {
+            opacity: 0.45;
+            transform: translateY(-3px);
+        }
+
+        .btn-primary {
+            background: var(--game-blue);
+            color: white;
+        }
+
+        .btn-primary::after {
+            background: var(--game-blue-dark);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: var(--game-blue-light);
+        }
+
+        .btn-secondary {
+            background: var(--game-red);
+            color: white;
+        }
+
+        .btn-secondary::after {
+            background: var(--game-red-dark);
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: var(--game-red-light);
+        }
+
+        /* Wi-Fi 列表红白蓝风格 */
+        .wifi-list-container {
+            margin: 16px 0 30px 0;
+            border: 4px solid var(--game-border);
+            display: none;
+            background: var(--game-white);
+            box-shadow: 5px 5px 0 0 var(--game-red-light), -2px -2px 0 0 var(--game-blue-light);
+        }
+
+        .wifi-list-container.active {
+            display: block;
+            animation: popIn 0.2s steps(3);
+        }
+
+        @keyframes popIn {
+            0% {
+                transform: scale(0.94);
+                opacity: 0;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .wifi-list-header {
+            padding: 10px 12px;
+            font-size: 11px;
+            background: var(--game-blue);
+            color: white;
+            border-bottom: 4px solid var(--game-border);
+            display: flex;
+            justify-content: space-between;
+            font-family: 'Press Start 2P', cursive;
+            text-shadow: 2px 2px 0 var(--game-blue-dark);
+        }
+
+        .wifi-list {
+            max-height: 220px;
+            overflow-y: auto;
+        }
+
+        .wifi-list::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        .wifi-list::-webkit-scrollbar-track {
+            background: var(--game-white);
+            border-left: 4px solid var(--game-border);
+        }
+
+        .wifi-list::-webkit-scrollbar-thumb {
+            background: var(--game-red);
+            border: 2px solid var(--game-border);
+        }
+
+        .wifi-item {
+            padding: 10px 12px;
+            border-bottom: 2px solid var(--game-border);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            background: var(--game-white);
+            font-size: 22px;
+        }
+
+        .wifi-item:hover {
+            background: #ffdede;
+            box-shadow: inset 5px 0px 0px 0px var(--game-red);
+        }
+
+        .wifi-item.selected {
+            background: #d9efff;
+            box-shadow: inset 5px 0px 0px 0px var(--game-blue);
+        }
+
+        .wifi-name {
+            font-size: 24px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .signal-strong {
+            color: var(--game-blue-dark);
+            font-weight: bold;
+        }
+
+        .signal-medium {
+            color: var(--game-blue);
+        }
+
+        .signal-weak {
+            color: var(--game-red-dark);
+        }
+
+        /* 表单 */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 22px;
+            color: var(--game-red-dark);
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 4px solid var(--game-border);
+            background: var(--game-white);
+            font-family: 'VT323', monospace;
+            font-size: 24px;
+            outline: none;
+            box-shadow: 4px 4px 0 0 var(--game-blue-light), -1px -1px 0 0 var(--game-red-light);
+            transform: translateY(-3px);
+        }
+
+        .form-input:focus {
+            background: #fefbff;
+            box-shadow: 4px 4px 0 0 var(--game-blue), -1px -1px 0 0 var(--game-red);
+        }
+
+        .pixel-divider {
+            height: 4px;
+            background: var(--game-border);
+            margin: 16px 0 26px 0;
+            position: relative;
+            box-shadow: 3px 3px 0px 0px var(--game-red);
+        }
+
+        .pixel-divider::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: -4px;
+            width: 16px;
+            height: 12px;
+            background: var(--game-blue);
+            border: 4px solid var(--game-border);
+        }
+
+        /* 状态页 */
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+            animation: popIn 0.2s steps(3);
+        }
+
+        .status-page {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .status-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+            font-family: 'Press Start 2P', cursive;
+        }
+
+        .success-color {
+            color: var(--game-blue-dark);
+            text-shadow: 3px 3px 0 var(--game-blue-light);
+        }
+
+        .fail-color {
+            color: var(--game-red-dark);
+            text-shadow: 3px 3px 0 var(--game-red-light);
+        }
+
+        .status-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+
+        .status-desc {
+            font-size: 24px;
+            color: var(--game-text-dim);
+            margin-bottom: 24px;
+        }
+
+        .status-desc strong {
+            color: var(--game-red-dark);
+            font-size: 28px;
+        }
+
+        /* 加载层 */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(250, 245, 245, 0.96);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            backdrop-filter: blur(2px);
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .pixel-spinner {
+            width: 48px;
+            height: 48px;
+            background: var(--game-red);
+            border: 4px solid var(--game-border);
+            box-shadow: 4px 4px 0 0 var(--game-blue-dark);
+            animation: pixelSpin 0.8s steps(4) infinite;
+        }
+
+        @keyframes pixelSpin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-text {
+            margin-top: 24px;
+            font-size: 28px;
+            color: var(--game-blue-dark);
+            animation: blink 1s steps(2) infinite;
+        }
+
+        @keyframes blink {
+            50% {
+                opacity: 0.3;
+            }
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 26px;
+            border: 4px solid var(--game-border);
+            font-size: 22px;
+            font-family: 'VT323', monospace;
+            z-index: 200;
+            display: none;
+            font-weight: bold;
+            white-space: nowrap;
+            box-shadow: 4px 4px 0 0 rgba(0, 0, 0, 0.2);
+        }
+
+        .toast.show {
+            display: block;
+            animation: slideDown 0.2s steps(3);
+        }
+
+        .toast.success {
+            background: var(--game-blue);
+            color: white;
+        }
+
+        .toast.error {
+            background: var(--game-red);
+            color: white;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateX(-50%) translateY(-30px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* ========== 游戏手柄区域 (十字键 + ABXY 圆形按钮) ========== */
+        .game-controller {
+            background: var(--game-white-off);
+            border-top: 4px solid var(--game-border);
+            padding: 24px 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            position: relative;
+            box-shadow: inset 0 6px 0 rgba(255, 255, 255, 0.6), 0 -2px 0 var(--game-border);
+        }
+
+        /* 十字键区域 */
+        .dpad-area {
+            flex: 1;
+            min-width: 140px;
+            text-align: center;
+        }
+
+        .dpad-label {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 8px;
+            margin-bottom: 14px;
+            color: var(--game-red-dark);
+            letter-spacing: 1px;
+        }
+
+        .dpad {
+            width: 150px;
+            height: 150px;
+            position: relative;
+            margin: 0 auto;
+        }
+
+        /* 十字键由5个方块拼成：中心 + 上下左右 */
+        .dpad-part {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background: #2c2c38;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            color: white;
+            transition: all 0.06s linear;
+            user-select: none;
+        }
+
+        .dpad-part:active {
+            background: var(--game-blue);
+            transform: scale(0.94);
+        }
+
+        /* 中心枢纽 */
+        .dpad-center {
+            top: 50px;
+            left: 50px;
+            cursor: default;
+            z-index: 2;
+        }
+
+        /* 上 */
+        .dpad-up {
+            top: 0;
+            left: 50px;
+            border-radius: 10px 10px 0 0;
+        }
+
+        /* 下 */
+        .dpad-down {
+            bottom: 0;
+            left: 50px;
+            border-radius: 0 0 10px 10px;
+        }
+
+        /* 左 */
+        .dpad-left {
+            top: 50px;
+            left: 0;
+            border-radius: 10px 0 0 10px;
+        }
+
+        /* 右 */
+        .dpad-right {
+            top: 50px;
+            right: 0;
+            border-radius: 0 10px 10px 0;
+        }
+
+        /* ABXY 圆形按钮区域 (菱形布局) */
+        .abxy-area {
+            flex: 1;
+            min-width: 140px;
+            text-align: center;
+        }
+
+        .abxy-label {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 8px;
+            margin-bottom: 14px;
+            color: var(--game-blue-dark);
+            letter-spacing: 1px;
+        }
+
+        .abxy-container {
+            position: relative;
+            width: 150px;
+            height: 150px;
+            margin: 0 auto;
+        }
+
+        .abxy-btn {
+            position: absolute;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: 4px solid var(--game-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.06s linear;
+            box-shadow: 3px 3px 0 0 rgba(0, 0, 0, 0.25);
+            text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        .abxy-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0 0 rgba(0, 0, 0, 0.35);
+        }
+
+        /* 菱形四方位 */
+        .abxy-btn[data-btn="X"] {
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #3b82f6;
+            color: white;
+        }
+
+        .abxy-btn[data-btn="Y"] {
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+            background: #f97316;
+            color: white;
+        }
+
+        .abxy-btn[data-btn="B"] {
+            top: 50%;
+            right: 0;
+            transform: translateY(-50%);
+            background: #22c55e;
+            color: white;
+        }
+
+        .abxy-btn[data-btn="A"] {
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #eab308;
+            color: var(--game-border);
+        }
+
+        /* active状态修正transform */
+        .abxy-btn[data-btn="X"]:active {
+            transform: translateX(-50%) translate(2px, 2px);
+        }
+
+        .abxy-btn[data-btn="Y"]:active {
+            transform: translateY(-50%) translate(2px, 2px);
+        }
+
+        .abxy-btn[data-btn="B"]:active {
+            transform: translateY(-50%) translate(2px, 2px);
+        }
+
+        .abxy-btn[data-btn="A"]:active {
+            transform: translateX(-50%) translate(2px, 2px);
+        }
+
+        /* 响应式小屏幕 */
+        @media (max-width: 480px) {
+            .game-controller {
+                padding: 20px 16px 24px;
+                gap: 16px;
+            }
+
+            .dpad {
+                width: 130px;
+                height: 130px;
+            }
+
+            .dpad-part {
+                width: 44px;
+                height: 44px;
+            }
+
+            .dpad-center {
+                top: 44px;
+                left: 44px;
+            }
+
+            .dpad-up {
+                top: 0;
+                left: 44px;
+            }
+
+            .dpad-down {
+                bottom: 0;
+                left: 44px;
+            }
+
+            .dpad-left {
+                top: 44px;
+                left: 0;
+            }
+
+            .dpad-right {
+                top: 44px;
+                right: 0;
+            }
+
+            .abxy-container {
+                width: 130px;
+                height: 130px;
+            }
+
+            .abxy-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 16px;
+            }
+        }
+    </style>
+    <base target="_blank">
+    <base target="_blank">
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>16x36 PIXEL<br>CLOCK</h1>
+            <p>Wi-Fi CONFIGURATION</p>
+        </div>
+
+        <!-- 配网页面 -->
+        <div id="page-config" class="page active">
+            <div class="content">
+                <button id="scan-btn" class="btn btn-primary">[ SCAN Wi-Fi ]</button>
+
+                <div id="wifi-list-container" class="wifi-list-container">
+                    <div class="wifi-list-header">
+                        <span>AP LIST</span>
+                        <span id="wifi-count">00</span>
+                    </div>
+                    <div id="wifi-list" class="wifi-list"></div>
+                </div>
+
+                <div class="pixel-divider"></div>
+
+                <div class="form-group">
+                    <label class="form-label">&gt; SSID</label>
+                    <input type="text" id="ssid" class="form-input" placeholder="SELECT FROM LIST">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">&gt; PASSWORD</label>
+                    <input type="password" id="password" class="form-input" placeholder="********">
+                </div>
+
+                <button id="submit-btn" class="btn btn-primary" disabled>[ CONNECT ]</button>
+            </div>
+        </div>
+
+        <!-- 成功页面 -->
+        <div id="page-success" class="page status-page">
+            <div class="status-icon success-color">✓ OK</div>
+            <div class="status-title">CONNECTED!</div>
+            <div class="status-desc">SSID: <strong id="success-ssid">---</strong><br>CLOCK IS ONLINE</div>
+            <div style="font-size:20px;color:#777;">YOU CAN CLOSE THIS PAGE NOW</div>
+        </div>
+
+        <!-- 失败页面 -->
+        <div id="page-fail" class="page status-page">
+            <div class="status-icon fail-color">⚠ ERR</div>
+            <div class="status-title">FAILED!</div>
+            <div class="status-desc">CANNOT CONNECT TO<br><strong id="fail-ssid">---</strong></div>
+            <button id="retry-btn" class="btn btn-secondary">[ RETRY ]</button>
+        </div>
+
+        <!-- 游戏手柄: 十字键 + ABXY -->
+        <div class="game-controller">
+            <div class="dpad-area">
+                <div class="dpad">
+                    <div class="dpad-part dpad-up" data-dir="up">▲</div>
+                    <div class="dpad-part dpad-left" data-dir="left">◀</div>
+                    <div class="dpad-part dpad-center"></div>
+                    <div class="dpad-part dpad-right" data-dir="right">▶</div>
+                    <div class="dpad-part dpad-down" data-dir="down">▼</div>
+                </div>
+            </div>
+
+            <div class="abxy-area">
+                <div class="abxy-container">
+                    <div class="abxy-btn" data-btn="X">X</div>
+                    <div class="abxy-btn" data-btn="Y">Y</div>
+                    <div class="abxy-btn" data-btn="B">B</div>
+                    <div class="abxy-btn" data-btn="A">A</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 加载层 -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="pixel-spinner"></div>
+        <div class="loading-text" id="loading-text">PROCESSING...</div>
+    </div>
+    <div id="toast" class="toast"></div>
+
+    <script>
+        (function () {
+            var gateway = `ws://${window.location.hostname}/ws`;
+            var websocket;
+            let scanTimeoutId;
+            let currentWifiList = [];
+            let isCompleted = false;
+            let connectionState = 'idle';
+
+            const scanBtn = document.getElementById('scan-btn');
+            const submitBtn = document.getElementById('submit-btn');
+            const retryBtn = document.getElementById('retry-btn');
+            const ssidInput = document.getElementById('ssid');
+            const passwordInput = document.getElementById('password');
+            const wifiListDiv = document.getElementById('wifi-list');
+            const wifiCountSpan = document.getElementById('wifi-count');
+            const wifiListContainer = document.getElementById('wifi-list-container');
+
+            window.addEventListener('load', onLoad);
+
+            function onLoad() {
+                initWebSocket();
+                bindEvents();
+                initGamePadInteractions();
+            }
+
+            function initWebSocket() {
+                websocket = new WebSocket(gateway);
+                websocket.onopen = () => {
+                    if (!isCompleted) showToast('DEVICE CONNECTED', 'success');
+                    if (connectionState === 'connecting') sendJson({ query: 'connect_status' });
+                };
+                websocket.onclose = () => { if (!isCompleted) setTimeout(initWebSocket, 3000); };
+                websocket.onmessage = onMessage;
+                websocket.onerror = () => { if (!isCompleted) showToast('CONNECTION ERROR', 'error'); };
+            }
+
+            function bindEvents() {
+                scanBtn.addEventListener('click', startScan);
+                submitBtn.addEventListener('click', startConnect);
+                retryBtn.addEventListener('click', backToConfig);
+                ssidInput.addEventListener('input', () => { submitBtn.disabled = !ssidInput.value.trim(); });
+                passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter' && !submitBtn.disabled) startConnect(); });
+            }
+
+            function onMessage(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.wifi_list) handleScanResult(data.wifi_list);
+                    if (data.connect_status) handleConnectResult(data);
+                } catch (e) { console.error(e); }
+            }
+
+            function handleScanResult(list) {
+                clearTimeout(scanTimeoutId);
+                currentWifiList = list;
+                wifiListDiv.innerHTML = '';
+                wifiCountSpan.textContent = list.length.toString().padStart(2, '0');
+                if (list.length === 0) wifiListDiv.innerHTML = '<div style="padding:16px;text-align:center;color:#888;">NO SIGNAL</div>';
+                else {
+                    list.forEach((ap, idx) => {
+                        const item = document.createElement('div');
+                        item.className = 'wifi-item';
+                        const signalClass = ap.rssi >= -50 ? 'signal-strong' : (ap.rssi >= -70 ? 'signal-medium' : 'signal-weak');
+                        const lockIcon = ap.encrypted ? '[🔒]' : '[🔓]';
+                        const signalBars = ap.rssi >= -50 ? '|||' : (ap.rssi >= -70 ? '||' : '|');
+                        item.innerHTML = `<div class="wifi-info"><div class="wifi-name">${escapeHtml(ap.ssid)}</div><div class="wifi-meta">${lockIcon} CH:${ap.primary || '--'} ${signalBars}</div></div><div class="wifi-signal ${signalClass}">${ap.rssi}dBm</div>`;
+                        item.addEventListener('click', () => {
+                            ssidInput.value = ap.ssid;
+                            submitBtn.disabled = false;
+                            passwordInput.focus();
+                            document.querySelectorAll('.wifi-item').forEach(el => el.classList.remove('selected'));
+                            item.classList.add('selected');
+                        });
+                        wifiListDiv.appendChild(item);
+                    });
+                }
+                wifiListContainer.classList.add('active');
+                scanBtn.textContent = '[ RE-SCAN ]';
+                scanBtn.disabled = false;
+                hideLoading();
+                showToast(`FOUND ${list.length} APs`, 'success');
+            }
+
+            function handleConnectResult(data) {
+                isCompleted = true;
+                connectionState = 'completed';
+                hideLoading();
+                const ssid = data.ssid || '';
+                if (data.connect_status === 'success') {
+                    showPage('page-success');
+                    document.getElementById('success-ssid').textContent = ssid;
+                    showToast('CONNECT OK', 'success');
+                } else {
+                    showPage('page-fail');
+                    document.getElementById('fail-ssid').textContent = ssid;
+                    showToast('CONNECT FAILED', 'error');
+                }
+            }
+
+            function startScan() {
+                scanBtn.disabled = true;
+                scanBtn.textContent = '[ SCANNING... ]';
+                showLoading('SCANNING...');
+                sendJson({ scan: 'start' });
+                scanTimeoutId = setTimeout(() => {
+                    if (scanBtn.disabled) { scanBtn.disabled = false; scanBtn.textContent = '[ RE-SCAN ]'; hideLoading(); showToast('SCAN TIMEOUT', 'error'); }
+                }, 20000);
+            }
+
+            function startConnect() {
+                const ssid = ssidInput.value.trim();
+                if (!ssid) { showToast('INPUT SSID FIRST', 'error'); return; }
+                showLoading('CONNECTING...');
+                submitBtn.disabled = true;
+                connectionState = 'connecting';
+                sendJson({ ssid: ssid, password: passwordInput.value });
+            }
+
+            function backToConfig() {
+                showPage('page-config');
+                passwordInput.value = '';
+                submitBtn.disabled = !ssidInput.value.trim();
+                connectionState = 'idle';
+                isCompleted = false;
+            }
+
+            function sendJson(obj) {
+                if (websocket && websocket.readyState === WebSocket.OPEN) websocket.send(JSON.stringify(obj));
+                else showToast('WS DISCONNECTED', 'error');
+            }
+
+            function showPage(pageId) {
+                document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+                document.getElementById(pageId).classList.add('active');
+            }
+            function showLoading(text) { document.getElementById('loading-text').textContent = text; document.getElementById('loading-overlay').classList.add('active'); }
+            function hideLoading() { document.getElementById('loading-overlay').classList.remove('active'); }
+            function showToast(msg, type) {
+                const toast = document.getElementById('toast');
+                toast.textContent = '> ' + msg;
+                toast.className = `toast ${type} show`;
+                setTimeout(() => toast.classList.remove('show'), 2700);
+            }
+            function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, function (m) { if (m === '&') return '&amp;'; if (m === '<') return '&lt;'; if (m === '>') return '&gt;'; return m; }); }
+
+            // 手柄交互
+            function initGamePadInteractions() {
+                document.querySelectorAll('.dpad-part[data-dir]').forEach(cell => {
+                    cell.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const dir = cell.getAttribute('data-dir');
+                        if (dir) showToast(`🎮 D-PAD: ${dir.toUpperCase()}`, 'success');
+                    });
+                });
+                document.querySelectorAll('.abxy-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const bt = btn.getAttribute('data-btn');
+                        if (bt) showToast(`🔘 BUTTON: ${bt}`, 'success');
+                    });
+                });
+            }
+        })();
+    </script>
+</body>
+
+</html>

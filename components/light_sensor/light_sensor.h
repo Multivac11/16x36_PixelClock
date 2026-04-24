@@ -40,6 +40,8 @@ class LightSensor
 
    private:
     QueueHandle_t queue_;
+
     uint16_t light_value_;
+
     adc_continuous_handle_t handle_;
 };

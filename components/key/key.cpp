@@ -1,7 +1,5 @@
 #include "key.h"
 
-constexpr uint32_t SCAN_MS = 20;
-
 StatusKey::StatusKey(gpio_num_t p1, gpio_num_t p2, gpio_num_t p3, uint32_t lm) : longMs_(lm), queue_(nullptr)
 {
     key_pin_[0] = p3;
@@ -21,8 +19,35 @@ void StatusKey::InitKeys()
     gpio_config(&gpio_cfg);
 
     queue_ = xQueueCreate(1, sizeof(Event));
-    xTaskCreatePinnedToCore(GetKeyTask, "GetKeyTask", 2048, this, 2, nullptr, 1);
+    xTaskCreatePinnedToCore(GetKeyTask, "GetKeyTask", 4096, this, 2, nullptr, 1);
     ESP_LOGI("Key", "InitKeys successfull");
+}
+
+bool StatusKey::RegisterListener(QueueHandle_t queue)
+{
+    if (queue == nullptr || listener_count_ >= MAX_LISTENERS) return false;
+
+    for (int i = 0; i < listener_count_; ++i)
+    {
+        if (listeners_[i] == queue) return true;  // 已存在，直接返回成功
+    }
+
+    listeners_[listener_count_++] = queue;
+    return true;
+}
+
+bool StatusKey::UnregisterListener(QueueHandle_t queue)
+{
+    for (int i = 0; i < listener_count_; ++i)
+    {
+        if (listeners_[i] == queue)
+        {
+            for (int j = i; j < listener_count_ - 1; ++j) listeners_[j] = listeners_[j + 1];
+            listeners_[--listener_count_] = nullptr;
+            return true;
+        }
+    }
+    return false;
 }
 
 void StatusKey::GetKeyTask(void *pvParameters)
@@ -41,60 +66,76 @@ void StatusKey::KeyStatus()
 void StatusKey::ScanKeys()
 {
     uint32_t now = esp_timer_get_time() / 1000;
+    bool changed = false;
 
     for (int i = 0; i < 3; ++i)
     {
         bool down = gpio_get_level(key_pin_[i]) == 0;
 
         if (down)
-        { // 检测到按下
+        {  // ========== 按键被按住 ==========
             if (!buffer_[i].act)
-            { // 如果是刚按下
+            {  // 刚按下：初始化状态
                 buffer_[i].act = true;
+                buffer_[i].triggered = false;
                 buffer_[i].t = now;
+                ev_.key[i] = KEY_NONE;
+            }
+            else
+            {  // 持续按住：实时判断时长
+                uint32_t dt = now - buffer_[i].t;
+                if (dt >= longMs_ && !buffer_[i].triggered)
+                {  // 首次达到阈值 → 触发长按
+                    ev_.key[i] = KEY_LONG;
+                    buffer_[i].triggered = true;
+                    changed = true;
+                    ESP_LOGI("Key", "Key %d Long (hold %u ms)", key_pin_[i], dt);
+                }
+                else if (buffer_[i].triggered)
+                {  // ← 新增：已经触发过，保持 LONG，不清除
+                    ev_.key[i] = KEY_LONG;
+                }
+                else
+                {  // 按着但还没达到阈值
+                    ev_.key[i] = KEY_NONE;
+                }
             }
         }
         else
-        { // 检测到未按下
+        {  // ========== 按键松开 / 未按 ==========
             if (buffer_[i].act)
-            { // 检测到按下刚松开
-                uint32_t dt = now - buffer_[i].t;
-                ev_.key[i] = (dt >= longMs_) ? KEY_LONG : KEY_SHORT;
-                buffer_[i].act = false;
+            {  // 之前是按下的，现在松开了
+                if (!buffer_[i].triggered)
+                {  // 未达到长按阈值 → 短按
+                    ev_.key[i] = KEY_SHORT;
+                    changed = true;
+                    ESP_LOGI("Key", "Key %d Short", key_pin_[i]);
+                }
+                else
+                {  // 长按松手 → 状态变回 NONE，通知监听者
+                    ev_.key[i] = KEY_NONE;
+                    changed = true;  // ← 新增：必须广播，否则监听者不知道松手了
+                    ESP_LOGI("Key", "Key %d Long Release", key_pin_[i]);
+                }
+                buffer_[i].act = false;  // 清除按下状态
             }
             else
-            {
+            {  // 一直未按
                 ev_.key[i] = KEY_NONE;
-                buffer_[i].t = now;
             }
         }
     }
 
-    bool allZero = true; // 判断当按键发生了变化时才写入队列
-    for (int i = 0; i < 3; ++i)
+    if (changed)
     {
-        if (ev_.key[i] != KEY_NONE)
+        for (int i = 0; i < listener_count_; ++i)
         {
-            allZero = false;
-            ESP_LOGI("Key", "Key %d %s", key_pin_[i], (ev_.key[i] == KEY_LONG) ? "Long" : "Short");
-            break;
+            if (listeners_[i])
+            {
+                xQueueOverwrite(listeners_[i], &ev_);
+            }
         }
-    }
-
-    if (!allZero)
-    {
-        xQueueOverwrite(queue_, &ev_);
     }
 
     vTaskDelay(pdMS_TO_TICKS(SCAN_MS));
-}
-
-bool StatusKey::Available()
-{
-    return xQueueReceive(queue_, &ev_, 0) == pdTRUE;
-}
-
-StatusKey::Event StatusKey::Read()
-{
-    return ev_;
 }

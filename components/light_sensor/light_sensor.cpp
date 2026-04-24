@@ -40,6 +40,7 @@ void LightSensor::GetLightValue()
             if (valid_count > 0)
             {
                 uint32_t avg = sum / valid_count;
+                (void)avg;
                 // ESP_LOGI("LightSensor", "Light Value: %d", avg);
                 // xQueueOverwrite(queue_, &voltage);
             }

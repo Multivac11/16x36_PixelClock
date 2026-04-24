@@ -66,6 +66,8 @@ class StatusLed
 
    private:
     gpio_num_t led_pin_[2];
+
     NetworkLedStatusEnum network_led_status_ = STATUS_NETWOIRK_SCANING;
+
     SystemLedStatusEnum system_led_status_ = STATUS_SYSTEM_NORMAL;
 };

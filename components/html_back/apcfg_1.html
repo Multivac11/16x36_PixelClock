@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PIXEL CLOCK CONFIG</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #050505;
+            --panel: #0a0a0a;
+            --neon-green: #00ff9d;
+            --neon-pink: #ff00aa;
+            --neon-cyan: #00f0ff;
+            --neon-yellow: #ffee00;
+            --dim: #333333;
+            --text: #e0e0e0;
+            --text-dim: #888888;
+            --pixel-size: 4px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        body {
+            font-family: 'VT323', monospace;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            /* 像素网格背景 */
+            background-image:
+                linear-gradient(rgba(0, 255, 157, 0.04) 2px, transparent 2px),
+                linear-gradient(90deg, rgba(0, 255, 157, 0.04) 2px, transparent 2px);
+            background-size: 16px 16px;
+            -webkit-font-smoothing: none;
+            -moz-osx-font-smoothing: unset;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* ========== 代码雨 Canvas ========== */
+        #matrix-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.55;
+        }
+
+        .container {
+            background: var(--panel);
+            width: 100%;
+            max-width: 450px;
+            border: 4px solid #1a1a1a;
+            box-shadow:
+                0 0 0 2px #000,
+                0 0 0 6px #1a1a1a,
+                0 0 24px rgba(0, 255, 157, 0.12),
+                inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+            position: relative;
+            z-index: 1;
+            /* 像素锯齿边框效果 */
+            outline: 2px solid #111;
+            outline-offset: -2px;
+        }
+
+        /* 四角像素装饰 - 更大更明显的8bit风格 */
+        .container::before,
+        .container::after {
+            content: '';
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: var(--neon-green);
+            z-index: 2;
+            box-shadow: 0 0 6px rgba(0, 255, 157, 0.7);
+        }
+
+        .container::before {
+            top: -6px;
+            left: -6px;
+            box-shadow:
+                0 0 6px rgba(0, 255, 157, 0.7),
+                calc(100% + 8px) 0 0 var(--neon-green),
+                calc(100% + 8px) 0 6px rgba(0, 255, 157, 0.5),
+                0 calc(100% + 8px) 0 var(--neon-green),
+                0 calc(100% + 8px) 6px rgba(0, 255, 157, 0.5);
+        }
+
+        .container::after {
+            bottom: -6px;
+            right: -6px;
+            box-shadow:
+                0 0 6px rgba(0, 255, 157, 0.7),
+                calc(-100% - 8px) 0 0 var(--neon-green),
+                calc(-100% - 8px) 0 6px rgba(0, 255, 157, 0.5),
+                0 calc(-100% - 8px) 0 var(--neon-green),
+                0 calc(-100% - 8px) 6px rgba(0, 255, 157, 0.5);
+        }
+
+        /* 顶部额外像素角标 */
+        .container .corner-badge-tr,
+        .container .corner-badge-bl {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: var(--neon-cyan);
+            z-index: 2;
+            box-shadow: 0 0 5px rgba(0, 240, 255, 0.6);
+        }
+
+        .container .corner-badge-tr {
+            top: -4px;
+            right: 20px;
+        }
+
+        .container .corner-badge-bl {
+            bottom: -4px;
+            left: 20px;
+        }
+
+        .header {
+            background: var(--panel);
+            padding: 28px 20px 22px;
+            text-align: center;
+            border-bottom: 3px solid #1a1a1a;
+            position: relative;
+        }
+
+        .header h1 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 15px;
+            color: var(--neon-green);
+            text-shadow:
+                2px 2px 0 #003320,
+                0 0 10px rgba(0, 255, 157, 0.7),
+                0 0 20px rgba(0, 255, 157, 0.4),
+                1px 0 0 var(--neon-green),
+                -1px 0 0 var(--neon-green);
+            line-height: 1.7;
+            letter-spacing: 2px;
+            -webkit-font-smoothing: none;
+            font-weight: normal;
+            /* 像素抖动微效果 */
+            animation: pixelGlitch 4s steps(2) infinite;
+        }
+
+        @keyframes pixelGlitch {
+
+            0%,
+            94%,
+            96%,
+            98%,
+            100% {
+                transform: translate(0, 0);
+            }
+
+            95% {
+                transform: translate(-2px, 1px);
+            }
+
+            97% {
+                transform: translate(2px, -1px);
+            }
+
+            99% {
+                transform: translate(-1px, 0);
+            }
+        }
+
+        .header p {
+            font-size: 22px;
+            color: var(--text-dim);
+            margin-top: 10px;
+            text-shadow: 1px 1px 0 #000;
+            letter-spacing: 1px;
+        }
+
+        /* 像素扫描线 - 更粗更明显 */
+        .scanline {
+            height: 3px;
+            background: repeating-linear-gradient(90deg,
+                    var(--neon-green),
+                    var(--neon-green) 6px,
+                    transparent 6px,
+                    transparent 12px);
+            opacity: 0.5;
+            box-shadow: 0 0 4px rgba(0, 255, 157, 0.3);
+        }
+
+        .content {
+            padding: 20px;
+        }
+
+        /* 按钮 - 强化8bit像素3D效果 */
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: 3px solid #1a1a1a;
+            background: #0d0d0d;
+            color: var(--text);
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.05s steps(1);
+            position: relative;
+            outline: none;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            -webkit-font-smoothing: none;
+            font-weight: normal;
+            /* 像素3D阴影 */
+            box-shadow:
+                0 5px 0 #000,
+                0 0 0 1px #111;
+            text-shadow: 1px 1px 0 #000;
+            image-rendering: pixelated;
+        }
+
+        .btn:hover:not(:disabled) {
+            border-color: var(--neon-green);
+            color: var(--neon-green);
+            text-shadow:
+                0 0 10px rgba(0, 255, 157, 0.6),
+                1px 1px 0 #001a0f;
+            box-shadow:
+                0 5px 0 #000,
+                0 0 14px rgba(0, 255, 157, 0.25),
+                inset 0 0 20px rgba(0, 255, 157, 0.08);
+            transform: translateY(-1px);
+        }
+
+        .btn:active:not(:disabled) {
+            transform: translateY(3px);
+            box-shadow:
+                0 2px 0 #000,
+                0 0 8px rgba(0, 255, 157, 0.2);
+            transition: all 0.02s steps(1);
+        }
+
+        .btn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+            color: #555;
+            box-shadow: 0 3px 0 #000;
+            transform: translateY(2px);
+        }
+
+        .btn-primary {
+            border-color: #0a3320;
+            color: var(--neon-green);
+            box-shadow:
+                0 5px 0 #001a0f,
+                0 0 0 1px #0a3320;
+            text-shadow: 1px 1px 0 #001a0f;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: rgba(0, 255, 157, 0.07);
+            box-shadow:
+                0 5px 0 #001a0f,
+                0 0 18px rgba(0, 255, 157, 0.3),
+                inset 0 0 20px rgba(0, 255, 157, 0.06);
+        }
+
+        .btn-secondary {
+            border-color: #330a22;
+            color: var(--neon-pink);
+            margin-top: 14px;
+            box-shadow:
+                0 5px 0 #1a0010,
+                0 0 0 1px #330a22;
+            text-shadow: 1px 1px 0 #1a0010;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: rgba(255, 0, 170, 0.07);
+            box-shadow:
+                0 5px 0 #1a0010,
+                0 0 18px rgba(255, 0, 170, 0.3),
+                inset 0 0 20px rgba(255, 0, 170, 0.06);
+        }
+
+        /* WiFi 列表 - 终端风格 */
+        .wifi-list-container {
+            margin: 16px 0;
+            border: 3px solid #1a1a1a;
+            display: none;
+            background: #060606;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.6);
+        }
+
+        .wifi-list-container.active {
+            display: block;
+            animation: flicker 0.3s steps(2);
+        }
+
+        @keyframes flicker {
+            0% {
+                opacity: 0;
+            }
+
+            40% {
+                opacity: 0.5;
+            }
+
+            60% {
+                opacity: 0.9;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .wifi-list-header {
+            padding: 10px 14px;
+            font-size: 18px;
+            color: var(--neon-cyan);
+            border-bottom: 3px solid #1a1a1a;
+            display: flex;
+            justify-content: space-between;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            letter-spacing: 1px;
+            text-shadow: 0 0 6px rgba(0, 240, 255, 0.5);
+            background: #080808;
+        }
+
+        .wifi-list {
+            max-height: 230px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #1a1a1a #060606;
+        }
+
+        .wifi-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .wifi-list::-webkit-scrollbar-track {
+            background: #060606;
+        }
+
+        .wifi-list::-webkit-scrollbar-thumb {
+            background: #1a1a1a;
+            border: 1px solid #000;
+        }
+
+        .wifi-item {
+            padding: 11px 14px;
+            border-bottom: 1px solid #1a1a1a;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 21px;
+            transition: all 0.06s steps(1);
+            text-shadow: 1px 1px 0 #000;
+        }
+
+        .wifi-item:hover {
+            background: rgba(0, 255, 157, 0.06);
+            color: var(--neon-green);
+            text-shadow: 0 0 6px rgba(0, 255, 157, 0.3);
+        }
+
+        .wifi-item.selected {
+            background: rgba(0, 255, 157, 0.12);
+            border-left: 4px solid var(--neon-green);
+            color: var(--neon-green);
+            text-shadow: 0 0 8px rgba(0, 255, 157, 0.4);
+            padding-left: 10px;
+        }
+
+        .wifi-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .wifi-name {
+            font-size: 23px;
+            font-weight: normal;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.2;
+            text-shadow: 1px 1px 0 #000;
+        }
+
+        .wifi-meta {
+            font-size: 19px;
+            color: var(--text-dim);
+            margin-top: 3px;
+            text-shadow: 1px 1px 0 #000;
+        }
+
+        .wifi-signal {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+            margin-left: 10px;
+            font-size: 19px;
+            text-shadow: 1px 1px 0 #000;
+        }
+
+        .signal-strong {
+            color: var(--neon-green);
+            text-shadow: 0 0 6px rgba(0, 255, 157, 0.5);
+        }
+
+        .signal-medium {
+            color: var(--neon-yellow);
+            text-shadow: 0 0 6px rgba(255, 238, 0, 0.5);
+        }
+
+        .signal-weak {
+            color: var(--neon-pink);
+            text-shadow: 0 0 6px rgba(255, 0, 170, 0.5);
+        }
+
+        /* 表单 */
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 7px;
+            font-size: 22px;
+            color: var(--neon-cyan);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow:
+                1px 1px 0 #000,
+                0 0 6px rgba(0, 240, 255, 0.4);
+            font-weight: normal;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 14px;
+            border: 3px solid #1a1a1a;
+            background: #060606;
+            color: var(--neon-green);
+            font-family: 'VT323', monospace;
+            font-size: 23px;
+            outline: none;
+            transition: border-color 0.08s steps(1);
+            box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.6);
+            text-shadow: 0 0 4px rgba(0, 255, 157, 0.3);
+            -webkit-font-smoothing: none;
+            caret-color: var(--neon-green);
+            letter-spacing: 1px;
+        }
+
+        .form-input:focus {
+            border-color: var(--neon-green);
+            box-shadow:
+                inset 0 0 12px rgba(0, 0, 0, 0.6),
+                0 0 12px rgba(0, 255, 157, 0.2);
+            text-shadow: 0 0 6px rgba(0, 255, 157, 0.5);
+        }
+
+        .form-input::placeholder {
+            color: #333;
+            text-shadow: none;
+        }
+
+        /* 页面切换 */
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+            animation: turnOn 0.45s steps(6);
+        }
+
+        @keyframes turnOn {
+            0% {
+                opacity: 0;
+                transform: scaleY(0.03);
+                filter: brightness(4);
+            }
+
+            40% {
+                opacity: 0.7;
+                transform: scaleY(0.03);
+                filter: brightness(3);
+            }
+
+            60% {
+                opacity: 0.9;
+                transform: scaleY(0.5);
+                filter: brightness(1.5);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scaleY(1);
+                filter: brightness(1);
+            }
+        }
+
+        /* 状态页 - 像素大字 */
+        .status-page {
+            text-align: center;
+            padding: 44px 20px;
+        }
+
+        .status-icon {
+            font-size: 56px;
+            margin-bottom: 24px;
+            font-family: 'Press Start 2P', cursive;
+            line-height: 1.5;
+            -webkit-font-smoothing: none;
+            font-weight: normal;
+        }
+
+        .success-color {
+            color: var(--neon-green);
+            text-shadow:
+                3px 3px 0 #003320,
+                0 0 20px rgba(0, 255, 157, 0.7),
+                0 0 40px rgba(0, 255, 157, 0.4);
+        }
+
+        .fail-color {
+            color: var(--neon-pink);
+            text-shadow:
+                3px 3px 0 #200015,
+                0 0 20px rgba(255, 0, 170, 0.7),
+                0 0 40px rgba(255, 0, 170, 0.4);
+        }
+
+        .status-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 15px;
+            color: var(--text);
+            margin-bottom: 18px;
+            line-height: 1.7;
+            text-shadow: 1px 1px 0 #000;
+            -webkit-font-smoothing: none;
+            font-weight: normal;
+            letter-spacing: 2px;
+        }
+
+        .status-desc {
+            font-size: 23px;
+            color: var(--text-dim);
+            margin-bottom: 26px;
+            line-height: 1.5;
+            text-shadow: 1px 1px 0 #000;
+        }
+
+        .status-desc strong {
+            color: var(--neon-cyan);
+            font-size: 26px;
+            text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+            font-weight: normal;
+        }
+
+        /* 加载层 - CRT 风格 */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(5, 5, 5, 0.94);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .pixel-spinner {
+            width: 44px;
+            height: 44px;
+            background: var(--neon-green);
+            animation: pixelSpin 0.6s steps(4) infinite;
+            box-shadow:
+                0 0 20px rgba(0, 255, 157, 0.6),
+                0 0 40px rgba(0, 255, 157, 0.3);
+            image-rendering: pixelated;
+        }
+
+        @keyframes pixelSpin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            25% {
+                transform: rotate(90deg);
+            }
+
+            50% {
+                transform: rotate(180deg);
+            }
+
+            75% {
+                transform: rotate(270deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-text {
+            margin-top: 22px;
+            font-size: 26px;
+            color: var(--neon-green);
+            font-family: 'Press Start 2P', cursive;
+            font-size: 11px;
+            animation: blink 0.8s steps(2) infinite;
+            text-shadow: 0 0 10px rgba(0, 255, 157, 0.5);
+            letter-spacing: 2px;
+            -webkit-font-smoothing: none;
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.15;
+            }
+        }
+
+        /* 提示条 - 像素弹窗 */
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 22px;
+            border: 3px solid;
+            font-size: 21px;
+            font-family: 'VT323', monospace;
+            z-index: 200;
+            display: none;
+            white-space: nowrap;
+            box-shadow:
+                0 6px 0 #000,
+                0 0 14px rgba(0, 0, 0, 0.7);
+            text-shadow: 1px 1px 0 #000;
+            letter-spacing: 1px;
+        }
+
+        .toast.show {
+            display: block;
+            animation: slideDown 0.2s steps(4);
+        }
+
+        .toast.success {
+            background: rgba(0, 20, 10, 0.95);
+            border-color: var(--neon-green);
+            color: var(--neon-green);
+            text-shadow: 0 0 8px rgba(0, 255, 157, 0.5);
+        }
+
+        .toast.error {
+            background: rgba(20, 0, 10, 0.95);
+            border-color: var(--neon-pink);
+            color: var(--neon-pink);
+            text-shadow: 0 0 8px rgba(255, 0, 170, 0.5);
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translate(-50%, -24px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translate(-50%, 0);
+                opacity: 1;
+            }
+        }
+
+        /* 像素分隔线 */
+        .pixel-divider {
+            height: 3px;
+            background: repeating-linear-gradient(90deg,
+                    #1a1a1a,
+                    #1a1a1a 6px,
+                    transparent 6px,
+                    transparent 12px);
+            margin: 18px 0;
+        }
+
+        /* WiFi列表滚动条像素化 */
+        .wifi-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .wifi-list::-webkit-scrollbar-track {
+            background: #050505;
+        }
+
+        .wifi-list::-webkit-scrollbar-thumb {
+            background: #1a1a1a;
+            border: 1px solid #000;
+        }
+
+        /* 响应式微调 */
+        @media (max-width: 460px) {
+            .container {
+                max-width: 100%;
+                border-width: 3px;
+                box-shadow:
+                    0 0 0 1px #000,
+                    0 0 0 5px #1a1a1a,
+                    0 0 18px rgba(0, 255, 157, 0.1);
+            }
+
+            .header h1 {
+                font-size: 13px;
+            }
+
+            .btn {
+                font-size: 10px;
+                padding: 12px;
+                letter-spacing: 1px;
+            }
+
+            .wifi-list-header {
+                font-size: 9px;
+            }
+
+            .status-icon {
+                font-size: 44px;
+            }
+
+            .status-title {
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 代码雨 Canvas -->
+    <canvas id="matrix-canvas"></canvas>
+
+    <div class="container">
+        <!-- 额外像素角标 -->
+        <div class="corner-badge-tr"></div>
+        <div class="corner-badge-bl"></div>
+
+        <div class="header">
+            <h1>16x36 PIXEL<br>CLOCK</h1>
+            <p>Wi-Fi CONFIGURATION</p>
+        </div>
+        <div class="scanline"></div>
+
+        <!-- 配网页面 -->
+        <div id="page-config" class="page active">
+            <div class="content">
+                <button id="scan-btn" class="btn btn-primary">
+                    ▶ [ SCAN Wi-Fi ]
+                </button>
+
+                <div id="wifi-list-container" class="wifi-list-container">
+                    <div class="wifi-list-header">
+                        <span>◆ AP LIST</span>
+                        <span id="wifi-count">00</span>
+                    </div>
+                    <div id="wifi-list" class="wifi-list"></div>
+                </div>
+
+                <div class="pixel-divider"></div>
+
+                <div class="form-group">
+                    <label class="form-label">▸ SSID</label>
+                    <input type="text" id="ssid" class="form-input" placeholder="SELECT FROM LIST...">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">▸ PASSWORD</label>
+                    <input type="password" id="password" class="form-input" placeholder="••••••••">
+                </div>
+
+                <button id="submit-btn" class="btn btn-primary" disabled>
+                    ▶ [ CONNECT ]
+                </button>
+            </div>
+        </div>
+
+        <!-- 成功页面 -->
+        <div id="page-success" class="page status-page">
+            <div class="status-icon success-color">■ OK</div>
+            <div class="status-title">CONNECTED!</div>
+            <div class="status-desc">
+                SSID: <strong id="success-ssid">---</strong><br>
+                CLOCK IS ONLINE
+            </div>
+            <div style="font-size:19px;color:#555;text-shadow:1px 1px 0 #000;">
+                YOU CAN CLOSE THIS PAGE NOW
+            </div>
+        </div>
+
+        <!-- 失败页面 -->
+        <div id="page-fail" class="page status-page">
+            <div class="status-icon fail-color">■ ERR</div>
+            <div class="status-title">FAILED!</div>
+            <div class="status-desc">
+                CANNOT CONNECT TO<br>
+                <strong id="fail-ssid">---</strong>
+            </div>
+            <button id="retry-btn" class="btn btn-secondary">
+                ▶ [ RETRY ]
+            </button>
+        </div>
+    </div>
+
+    <!-- 加载层 -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="pixel-spinner"></div>
+        <div class="loading-text" id="loading-text">PROCESSING...</div>
+    </div>
+
+    <!-- 提示条 -->
+    <div id="toast" class="toast"></div>
+
+    <script>
+        // ==================== 代码雨系统 ====================
+        (function initMatrixRain() {
+            const canvas = document.getElementById('matrix-canvas');
+            const ctx = canvas.getContext('2d');
+
+            // 英语字符集
+            const chars =
+                'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz!@#$%^&*()_+-=[]{}|;:,.<>?/\\';
+
+            let columns = [];
+            let fontSize = 15;
+            let lastFrameTime = 0;
+            const targetFPS = 60; // 低帧率增强8bit像素感
+            const frameInterval = 1000 / targetFPS;
+
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                // 根据屏幕宽度调整字体大小和列数
+                if (canvas.width < 400) {
+                    fontSize = 13;
+                } else if (canvas.width < 700) {
+                    fontSize = 15;
+                } else {
+                    fontSize = 17;
+                }
+                initColumns();
+            }
+
+            function initColumns() {
+                const colWidth = fontSize * 1.8;
+                const totalCols = Math.floor(canvas.width / colWidth);
+                columns = [];
+                for (let i = 0; i < totalCols; i++) {
+                    columns.push({
+                        x: i * colWidth + Math.random() * 8,
+                        y: Math.random() * canvas.height * -1.5, // 初始随机散布
+                        speed: 0.6 + Math.random() * 2.2,
+                        length: 4 + Math.floor(Math.random() * 10),
+                        active: Math.random() < 0.40, // 仅30%列活跃，保持稀疏
+                        cooldown: Math.floor(Math.random() * 200),
+                        chars: [],
+                        headChar: chars[Math.floor(Math.random() * chars.length)],
+                    });
+                    // 预填充每列的字符
+                    for (let j = 0; j < columns[i].length; j++) {
+                        columns[i].chars.push(chars[Math.floor(Math.random() * chars.length)]);
+                    }
+                }
+            }
+
+            function drawRain(timestamp) {
+                if (timestamp - lastFrameTime < frameInterval) {
+                    requestAnimationFrame(drawRain);
+                    return;
+                }
+                lastFrameTime = timestamp;
+
+                // 半透明覆盖创建拖尾效果（同时让body的像素网格隐约透出）
+                ctx.fillStyle = 'rgba(5, 5, 5, 0.82)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ctx.font = fontSize + 'px monospace';
+                ctx.textBaseline = 'top';
+
+                for (let i = 0; i < columns.length; i++) {
+                    const col = columns[i];
+
+                    if (!col.active) {
+                        col.cooldown--;
+                        if (col.cooldown <= 0) {
+                            // 重新激活
+                            col.active = true;
+                            col.y = -col.length * fontSize * (0.5 + Math.random());
+                            col.speed = 0.6 + Math.random() * 2.2;
+                            col.length = 4 + Math.floor(Math.random() * 10);
+                            col.headChar = chars[Math.floor(Math.random() * chars.length)];
+                            col.chars = [];
+                            for (let j = 0; j < col.length; j++) {
+                                col.chars.push(chars[Math.floor(Math.random() * chars.length)]);
+                            }
+                        }
+                        continue;
+                    }
+
+                    // 更新字符（随机变化，模拟代码雨效果）
+                    if (Math.random() < 0.25) {
+                        col.chars[0] = chars[Math.floor(Math.random() * chars.length)];
+                    }
+                    if (Math.random() < 0.15) {
+                        const ri = Math.floor(Math.random() * col.chars.length);
+                        col.chars[ri] = chars[Math.floor(Math.random() * chars.length)];
+                    }
+                    col.headChar = chars[Math.floor(Math.random() * chars.length)];
+
+                    // 绘制雨滴
+                    for (let j = 0; j < col.chars.length; j++) {
+                        const charY = col.y - j * fontSize;
+                        if (charY < -fontSize || charY > canvas.height) continue;
+
+                        if (j === 0) {
+                            // 头部 - 亮白绿
+                            ctx.fillStyle = '#e0ffe8';
+                            ctx.shadowColor = 'rgba(200, 255, 220, 0.9)';
+                            ctx.shadowBlur = 8;
+                            ctx.fillText(col.headChar, col.x, charY);
+                            ctx.shadowBlur = 0;
+                        } else if (j === 1) {
+                            // 次亮
+                            ctx.fillStyle = '#66ffb8';
+                            ctx.shadowColor = 'rgba(0, 255, 157, 0.6)';
+                            ctx.shadowBlur = 5;
+                            ctx.fillText(col.chars[j], col.x, charY);
+                            ctx.shadowBlur = 0;
+                        } else if (j === 2) {
+                            ctx.fillStyle = '#00dd7d';
+                            ctx.shadowColor = 'rgba(0, 200, 100, 0.35)';
+                            ctx.shadowBlur = 3;
+                            ctx.fillText(col.chars[j], col.x, charY);
+                            ctx.shadowBlur = 0;
+                        } else if (j <= 4) {
+                            const alpha = 0.7 - (j - 3) * 0.2;
+                            ctx.fillStyle = `rgba(0,180,70,${alpha})`;
+                            ctx.fillText(col.chars[j], col.x, charY);
+                        } else {
+                            const alpha = Math.max(0.08, 0.5 - (j - 5) * 0.08);
+                            ctx.fillStyle = `rgba(0,100,35,${alpha})`;
+                            ctx.fillText(col.chars[j], col.x, charY);
+                        }
+                    }
+
+                    // 移动雨滴
+                    col.y += col.speed * (fontSize / 15);
+
+                    // 检查是否完全离开屏幕
+                    if (col.y - col.length * fontSize > canvas.height + fontSize * 3) {
+                        col.active = false;
+                        col.cooldown = 30 + Math.floor(Math.random() * 180); // 冷却时间
+                    }
+                }
+
+                requestAnimationFrame(drawRain);
+            }
+
+            // 初始化
+            resizeCanvas();
+            window.addEventListener('resize', () => {
+                resizeCanvas();
+            });
+
+            // 启动代码雨
+            requestAnimationFrame(drawRain);
+
+            console.log('█ Matrix rain initialized █');
+        })();
+
+        // ==================== 配网逻辑 ====================
+        var gateway = `ws://${window.location.hostname}/ws`;
+        var websocket;
+        let scanTimeoutId;
+        let currentWifiList = [];
+        let isCompleted = false;
+        let connectionState = 'idle';
+
+        window.addEventListener('load', onLoad);
+
+        function onLoad() {
+            initWebSocket();
+            bindEvents();
+        }
+
+        function initWebSocket() {
+            console.log('Opening WebSocket...');
+            websocket = new WebSocket(gateway);
+            websocket.onopen = () => {
+                console.log('WS connected');
+                if (!isCompleted) showToast('DEVICE CONNECTED', 'success');
+                if (connectionState === 'connecting') {
+                    console.log('Reconnected while connecting, query status...');
+                    sendJson({ query: 'connect_status' });
+                }
+            };
+            websocket.onclose = () => {
+                if (isCompleted) {
+                    console.log('WS closed after completion');
+                    return;
+                }
+                console.log('WS closed, retry in 3s');
+                setTimeout(initWebSocket, 3000);
+            };
+            websocket.onmessage = onMessage;
+            websocket.onerror = (e) => {
+                if (isCompleted) return;
+                console.error('WS error', e);
+                showToast('CONNECTION ERROR', 'error');
+            };
+        }
+
+        function bindEvents() {
+            document.getElementById('scan-btn').addEventListener('click', startScan);
+            document.getElementById('submit-btn').addEventListener('click', startConnect);
+            document.getElementById('retry-btn').addEventListener('click', backToConfig);
+
+            document.getElementById('ssid').addEventListener('input', function () {
+                document.getElementById('submit-btn').disabled = !this.value.trim();
+            });
+        }
+
+        function onMessage(event) {
+            try {
+                const data = JSON.parse(event.data);
+                console.log('WS msg:', data);
+
+                if (data.wifi_list) {
+                    handleScanResult(data.wifi_list);
+                    return;
+                }
+
+                if (data.connect_status) {
+                    handleConnectResult(data);
+                    return;
+                }
+            } catch (e) {
+                console.error('Parse error:', e);
+            }
+        }
+
+        function handleScanResult(list) {
+            clearTimeout(scanTimeoutId);
+            currentWifiList = list;
+
+            const container = document.getElementById('wifi-list-container');
+            const wifiListEl = document.getElementById('wifi-list');
+            const scanBtn = document.getElementById('scan-btn');
+
+            wifiListEl.innerHTML = '';
+            document.getElementById('wifi-count').textContent = list.length.toString().padStart(2, '0');
+
+            if (list.length === 0) {
+                wifiListEl.innerHTML =
+                    '<div style="padding:16px;text-align:center;color:#555;font-size:21px;">NO SIGNAL FOUND</div>';
+            } else {
+                list.forEach((ap, idx) => {
+                    const item = document.createElement('div');
+                    item.className = 'wifi-item';
+                    item.dataset.idx = idx;
+
+                    const signalClass = ap.rssi >= -50 ? 'signal-strong' : (ap.rssi >= -70 ?
+                        'signal-medium' : 'signal-weak');
+                    const lockIcon = ap.encrypted ? '[LOCK]' : '[OPEN]';
+                    const signalBars = ap.rssi >= -50 ? '▮▮▮' : (ap.rssi >= -70 ? '▮▮' : '▮');
+
+                    item.innerHTML = `
+                        <div class="wifi-info">
+                            <div class="wifi-name">${escapeHtml(ap.ssid)}</div>
+                            <div class="wifi-meta">${lockIcon} CH:${ap.primary || '--'} ${signalBars}</div>
+                        </div>
+                        <div class="wifi-signal ${signalClass}">
+                            ${ap.rssi}dBm
+                        </div>
+                    `;
+
+                    item.addEventListener('click', () => {
+                        document.getElementById('ssid').value = ap.ssid;
+                        document.getElementById('submit-btn').disabled = false;
+                        document.getElementById('password').focus();
+
+                        document.querySelectorAll('.wifi-item').forEach(el => el.classList
+                            .remove('selected'));
+                        item.classList.add('selected');
+                    });
+
+                    wifiListEl.appendChild(item);
+                });
+            }
+
+            container.classList.add('active');
+            scanBtn.textContent = '▶ [ RE-SCAN ]';
+            scanBtn.disabled = false;
+            hideLoading();
+            showToast(`FOUND ${list.length} APs`, 'success');
+        }
+
+        function handleConnectResult(data) {
+            isCompleted = true;
+            connectionState = 'completed';
+            hideLoading();
+            const ssid = data.ssid || '';
+
+            if (data.connect_status === 'success') {
+                showPage('page-success');
+                document.getElementById('success-ssid').textContent = ssid;
+                showToast('CONNECT OK', 'success');
+            } else {
+                showPage('page-fail');
+                document.getElementById('fail-ssid').textContent = ssid;
+                showToast('CONNECT FAILED', 'error');
+            }
+        }
+
+        function startScan() {
+            const scanBtn = document.getElementById('scan-btn');
+            scanBtn.disabled = true;
+            scanBtn.textContent = '▶ [ SCANNING... ]';
+            showLoading('SCANNING...');
+
+            sendJson({ scan: 'start' });
+
+            scanTimeoutId = setTimeout(() => {
+                scanBtn.disabled = false;
+                scanBtn.textContent = '▶ [ RE-SCAN ]';
+                hideLoading();
+                showToast('SCAN TIMEOUT', 'error');
+            }, 20000);
+        }
+
+        function startConnect() {
+            const ssid = document.getElementById('ssid').value.trim();
+            const password = document.getElementById('password').value;
+
+            if (!ssid) {
+                showToast('INPUT SSID FIRST', 'error');
+                return;
+            }
+
+            showLoading('CONNECTING...');
+            document.getElementById('submit-btn').disabled = true;
+
+            connectionState = 'connecting';
+            sendJson({ ssid: ssid, password: password });
+        }
+
+        function backToConfig() {
+            showPage('page-config');
+            document.getElementById('password').value = '';
+            document.getElementById('submit-btn').disabled = !document.getElementById('ssid').value.trim();
+            connectionState = 'idle';
+        }
+
+        function sendJson(obj) {
+            if (websocket && websocket.readyState === WebSocket.OPEN) {
+                websocket.send(JSON.stringify(obj));
+            } else {
+                showToast('WS DISCONNECTED', 'error');
+            }
+        }
+
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+        }
+
+        function showLoading(text) {
+            document.getElementById('loading-text').textContent = text;
+            document.getElementById('loading-overlay').classList.add('active');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading-overlay').classList.remove('active');
+        }
+
+        function showToast(msg, type) {
+            const toast = document.getElementById('toast');
+            toast.textContent = '> ' + msg;
+            toast.className = `toast ${type} show`;
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+
+</html>

@@ -80,6 +80,7 @@ void AudioCapture::GetAudios()
                     sum += val;
                 }
                 float mean = (float)sum / samples_read;
+                (void)mean;
                 // ESP_LOGI("AudioCapture", "mean: %f", mean);
             }
         }
