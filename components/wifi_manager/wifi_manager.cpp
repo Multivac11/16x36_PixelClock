@@ -21,7 +21,6 @@ void WifiManager::HandleEvent(esp_event_base_t event_base, int32_t event_id, voi
             case WIFI_EVENT_STA_DISCONNECTED:
                 if (connecting_)
                 {
-                    /* 主动连接过程中的失败：内部重试 3 次 */
                     if (connect_retry_count_ < MAX_CONNECT_RETRY_COUNT)
                     {
                         esp_wifi_connect();
@@ -37,7 +36,6 @@ void WifiManager::HandleEvent(esp_event_base_t event_base, int32_t event_id, voi
                 }
                 else
                 {
-                    /* 已连接后的意外断线：通知上层重新走自动连接流程 */
                     ESP_LOGW("WifiManager", "STA disconnected unexpectedly");
                     if (disconnect_cb_)
                     {
@@ -72,9 +70,13 @@ void WifiManager::HandleEvent(esp_event_base_t event_base, int32_t event_id, voi
     {
         switch (event_id)
         {
-            case IP_EVENT_STA_GOT_IP:
+            case IP_EVENT_STA_GOT_IP: {
+                ip_event_got_ip_t *event = (ip_event_got_ip_t *)event_data;
                 ESP_LOGI("WifiManager", "IP_EVENT_STA_GOT_IP");
+                ESP_LOGI("WifiManager", "  IP: " IPSTR ", Mask: " IPSTR ", GW: " IPSTR, IP2STR(&event->ip_info.ip),
+                         IP2STR(&event->ip_info.netmask), IP2STR(&event->ip_info.gw));
                 break;
+            }
             default:
                 break;
         }
@@ -102,6 +104,7 @@ void WifiManager::WifiManagerInit()
 
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_start());
+    ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_PS_NONE));
 }
 
 void WifiManager::WifiManagerConnect(const char *ssid, const char *password)
@@ -117,7 +120,6 @@ void WifiManager::WifiManagerConnect(const char *ssid, const char *password)
 
     if (mode == WIFI_MODE_APSTA)
     {
-        /* 配网模式：保持 AP 运行，直接配置 STA 并连接 */
         ESP_LOGI("WifiManager", "APSTA mode: keep AP alive, start STA connect to %s", ssid);
         connecting_ = true;
         connect_retry_count_ = 0;
@@ -281,7 +283,6 @@ void WifiManager::SaveWifiCredential(const char *ssid, const char *password)
 {
     auto list = GetSavedWifiList();
 
-    // 已存在则更新密码
     for (auto &cred : list)
     {
         if (strcmp(cred.ssid, ssid) == 0)
@@ -294,7 +295,6 @@ void WifiManager::SaveWifiCredential(const char *ssid, const char *password)
         }
     }
 
-    // 追加，最多 5 条；满了淘汰最早的
     if (list.size() >= 5)
     {
         list.erase(list.begin());
@@ -322,7 +322,6 @@ void WifiManager::ClearSavedWifiList()
     }
 }
 
-/* ---------- 断线回调 ---------- */
 void WifiManager::SetDisconnectCallback(DisconnectCallback cb)
 {
     disconnect_cb_ = std::move(cb);
