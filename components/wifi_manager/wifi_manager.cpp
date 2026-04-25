@@ -16,9 +16,15 @@ void WifiManager::HandleEvent(esp_event_base_t event_base, int32_t event_id, voi
         switch (event_id)
         {
             case WIFI_EVENT_STA_START:
+                SetStatus(WIFI_STATUS_DISCONNECTED);
+                break;
+
+            case WIFI_EVENT_STA_STOP:
+                SetStatus(WIFI_STATUS_DISCONNECTED);
                 break;
 
             case WIFI_EVENT_STA_DISCONNECTED:
+                SetStatus(WIFI_STATUS_DISCONNECTED);
                 if (connecting_)
                 {
                     if (connect_retry_count_ < MAX_CONNECT_RETRY_COUNT)
@@ -45,6 +51,7 @@ void WifiManager::HandleEvent(esp_event_base_t event_base, int32_t event_id, voi
                 break;
 
             case WIFI_EVENT_STA_CONNECTED:
+                SetStatus(WIFI_STATUS_CONNECTED);
                 if (connecting_)
                 {
                     connecting_ = false;
@@ -55,13 +62,17 @@ void WifiManager::HandleEvent(esp_event_base_t event_base, int32_t event_id, voi
                 break;
 
             case WIFI_EVENT_AP_STACONNECTED:
+                SetStatus(WIFI_STATUS_CONNECTED);
                 ESP_LOGI("WifiManager", "ap connected.");
                 break;
 
             case WIFI_EVENT_AP_STADISCONNECTED:
+                SetStatus(WIFI_STATUS_DISCONNECTED);
                 ESP_LOGI("WifiManager", "ap disconnected.");
                 break;
 
+            case WIFI_EVENT_AP_START:
+                SetStatus(WIFI_STATUS_APMODE);
             default:
                 break;
         }
@@ -83,8 +94,52 @@ void WifiManager::HandleEvent(esp_event_base_t event_base, int32_t event_id, voi
     }
 }
 
+void WifiManager::SetStatus(WifiStatus status)
+{
+    if (status_ != status)
+    {
+        ESP_LOGW("WifiManager", "SetStatus %d", status);
+        status_ = status;
+        for (int i = 0; i < listener_count_; ++i)
+        {
+            if (listeners_[i])
+            {
+                xQueueOverwrite(listeners_[i], &status_);
+            }
+        }
+    }
+}
+
+bool WifiManager::RegisterListener(QueueHandle_t queue)
+{
+    if (queue == nullptr || listener_count_ >= MAX_LISTENERS) return false;
+
+    for (int i = 0; i < listener_count_; ++i)
+    {
+        if (listeners_[i] == queue) return true;  // 已存在，直接返回成功
+    }
+
+    listeners_[listener_count_++] = queue;
+    return true;
+}
+
+bool WifiManager::UnregisterListener(QueueHandle_t queue)
+{
+    for (int i = 0; i < listener_count_; ++i)
+    {
+        if (listeners_[i] == queue)
+        {
+            for (int j = i; j < listener_count_ - 1; ++j) listeners_[j] = listeners_[j + 1];
+            listeners_[--listener_count_] = nullptr;
+            return true;
+        }
+    }
+    return false;
+}
+
 void WifiManager::WifiManagerInit()
 {
+    queue_ = xQueueCreate(1, sizeof(WifiStatus));
     ESP_ERROR_CHECK(nvs_flash_init());
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
@@ -184,6 +239,7 @@ void WifiManager::WifiManagerStop()
 {
     connecting_ = false;
     esp_wifi_stop();
+    SetStatus(WIFI_STATUS_DISCONNECTED);
 }
 
 void WifiManager::ScanTask(void *pvParameters)

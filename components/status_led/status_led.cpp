@@ -18,14 +18,20 @@ void StatusLed::InitStatusLed()
     gpio_config(&gpio_cfg);
 
     xTaskCreatePinnedToCore(GetStatusTask, "GetStatusTask", 2048, this, 1, nullptr, 1);
-    xTaskCreatePinnedToCore(SetNetworkStatusTask, "SetStatusTask", 2048, this, 1, nullptr, 1);
+    xTaskCreatePinnedToCore(WifiListenerTask, "WifiListenerTask", 2048, this, 1, nullptr, 1);
+    xTaskCreatePinnedToCore(WifiStatusTask, "WifiStatusTask", 2048, this, 1, nullptr, 1);
     xTaskCreatePinnedToCore(SetSystemStatusTask, "SetSystemStatusTask", 2048, this, 1, nullptr, 1);
     ESP_LOGI("StatusLed", "InitStatusLed successfull");
 }
 
-void StatusLed::SetNetworkStatusTask(void *pvParameters)
+void StatusLed::WifiListenerTask(void *pvParameters)
 {
-    static_cast<StatusLed *>(pvParameters)->NetworkLedStatus();
+    static_cast<StatusLed *>(pvParameters)->WifiListener();
+}
+
+void StatusLed::WifiStatusTask(void *pvParameters)
+{
+    static_cast<StatusLed *>(pvParameters)->WifiStatus();
 }
 
 void StatusLed::SetSystemStatusTask(void *pvParameters)
@@ -36,6 +42,19 @@ void StatusLed::SetSystemStatusTask(void *pvParameters)
 void StatusLed::GetStatusTask(void *pvParameters)
 {
     static_cast<StatusLed *>(pvParameters)->GetStatus();
+}
+
+void StatusLed::WifiListener()
+{
+    QueueHandle_t q = xQueueCreate(1, sizeof(WifiManager::WifiStatus));
+    WifiManager::GetInstance().RegisterListener(q);
+    while (true)
+    {
+        if (xQueueReceive(q, &wifi_status_, portMAX_DELAY) == pdTRUE)
+        {
+            ESP_LOGW("StatusLed", "NetworkLedStatus %d", wifi_status_);
+        }
+    }
 }
 
 void StatusLed::SystemLedStatus()
@@ -53,11 +72,26 @@ void StatusLed::SystemLedStatus()
     }
 }
 
-void StatusLed::NetworkLedStatus()
+void StatusLed::WifiStatus()
 {
     while (true)
     {
-        vTaskDelay(pdMS_TO_TICKS(1000));
+        if (wifi_status_ == WifiManager::WifiStatus::WIFI_STATUS_DISCONNECTED)
+        {
+            WifiDisconnected();
+        }
+        else if (wifi_status_ == WifiManager::WifiStatus::WIFI_STATUS_CONNECTED)
+        {
+            WifiConnected();
+        }
+        else if (wifi_status_ == WifiManager::WifiStatus::WIFI_STATUS_APMODE)
+        {
+            WifiAPmode();
+        }
+        else if (wifi_status_ == WifiManager::WifiStatus::WIFI_STATUS_SCANNING)
+        {
+            WifiScanning();
+        }
     }
 }
 
@@ -85,28 +119,41 @@ void StatusLed::SystemError()
     vTaskDelay(pdMS_TO_TICKS(50));
 }
 
-void StatusLed::NetworkScanning()
+void StatusLed::WifiDisconnected()
 {
     LedOn(led_pin_[0]);
-    vTaskDelay(pdMS_TO_TICKS(50));
+    vTaskDelay(pdMS_TO_TICKS(500));
     LedOff(led_pin_[0]);
-    vTaskDelay(pdMS_TO_TICKS(50));
+    vTaskDelay(pdMS_TO_TICKS(500));
 }
 
-void StatusLed::NetworkAPmode()
+void StatusLed::WifiAPmode()
 {
     LedOn(led_pin_[0]);
     vTaskDelay(pdMS_TO_TICKS(150));
     LedOff(led_pin_[0]);
     vTaskDelay(pdMS_TO_TICKS(150));
+
+    LedOn(led_pin_[0]);
+    vTaskDelay(pdMS_TO_TICKS(150));
+    LedOff(led_pin_[0]);
+    vTaskDelay(pdMS_TO_TICKS(150));
+
+    vTaskDelay(pdMS_TO_TICKS(2000));
 }
 
-void StatusLed::NetworkOnline()
+void StatusLed::WifiConnected()
 {
     LedOn(led_pin_[0]);
-    vTaskDelay(pdMS_TO_TICKS(1200));
+    vTaskDelay(pdMS_TO_TICKS(2000));
+}
+
+void StatusLed::WifiScanning()
+{
+    LedOn(led_pin_[0]);
+    vTaskDelay(pdMS_TO_TICKS(50));
     LedOff(led_pin_[0]);
-    vTaskDelay(pdMS_TO_TICKS(1200));
+    vTaskDelay(pdMS_TO_TICKS(50));
 }
 
 void StatusLed::LedOn(gpio_num_t led_gpio)

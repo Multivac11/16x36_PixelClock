@@ -21,7 +21,9 @@ class WsMatrix
 
    private:
     static void WsMatrixTask(void*);
+
     void ShowMatrix();
+
     void SetMatrix();
 
    private:

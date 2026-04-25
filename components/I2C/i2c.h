@@ -19,15 +19,18 @@ class I2CMaster
     static I2CMaster &GetInstance()
     {
         static I2CMaster instance;
+
         return instance;
     }
 
     I2CMaster() = default;
+
     ~I2CMaster() = default;
 
     void InitI2C();
 
    public:
     i2c_master_bus_handle_t bus_handle_;
+
     i2c_master_dev_handle_t dev_handle_;
 };

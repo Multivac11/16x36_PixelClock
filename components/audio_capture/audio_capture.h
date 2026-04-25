@@ -21,10 +21,12 @@ class AudioCapture
     static AudioCapture &GetInstance()
     {
         static AudioCapture instance;
+
         return instance;
     }
 
     AudioCapture() = default;
+
     ~AudioCapture() = default;
 
     void InitAudioCapture();
@@ -38,9 +40,14 @@ class AudioCapture
 
    private:
     QueueHandle_t queue_;
+
     i2s_std_config_t i2s_config_;
+
     uint32_t buffer_[bufferLen];
+
     size_t bytesIn_ = 0;
+
     esp_err_t result_;
+
     i2s_chan_handle_t rx_chan_;
 };

@@ -68,10 +68,12 @@ void ApWifi::AutoConnectLoop()
         goto exit;
     }
     vTaskDelay(pdMS_TO_TICKS(200));
+    WifiManager::GetInstance().SetStatus(WifiManager::WIFI_STATUS_SCANNING);
 
     for (int round = 0; round < AUTO_CONNECT_MAX_ROUNDS; ++round)
     {
         if (ap_mode_requested_) goto exit;
+        WifiManager::GetInstance().SetStatus(WifiManager::WIFI_STATUS_SCANNING);
 
         /* 扫描周边 WiFi */
         struct ScanContext
@@ -321,23 +323,29 @@ void ApWifi::ApWifiConnect()
 
 void ApWifi::OnWifiScanResult(int num, const wifi_ap_record_t *records)
 {
-    cJSON *root = cJSON_CreateObject();
-    cJSON *wifi_list_js = cJSON_AddArrayToObject(root, "wifi_list");
+    std::map<std::string, wifi_ap_record_t> best_ap;
     for (int i = 0; i < num; i++)
     {
+        std::string ssid(reinterpret_cast<const char *>(records[i].ssid));
+        auto it = best_ap.find(ssid);
+        if (it == best_ap.end() || records[i].rssi > it->second.rssi)
+        {
+            best_ap[ssid] = records[i];
+        }
+    }
+
+    cJSON *root = cJSON_CreateObject();
+    cJSON *wifi_list_js = cJSON_AddArrayToObject(root, "wifi_list");
+    for (const auto &pair : best_ap)
+    {
+        const auto &ap = pair.second;
         cJSON *wifi_js = cJSON_CreateObject();
-        cJSON_AddStringToObject(wifi_js, "ssid", (char *)records[i].ssid);
-        cJSON_AddNumberToObject(wifi_js, "rssi", records[i].rssi);
-        if (records[i].authmode == WIFI_AUTH_OPEN)
-        {
-            cJSON_AddBoolToObject(wifi_js, "encrypted", 0);
-        }
-        else
-        {
-            cJSON_AddBoolToObject(wifi_js, "encrypted", 1);
-        }
+        cJSON_AddStringToObject(wifi_js, "ssid", reinterpret_cast<const char *>(ap.ssid));
+        cJSON_AddNumberToObject(wifi_js, "rssi", ap.rssi);
+        cJSON_AddBoolToObject(wifi_js, "encrypted", (ap.authmode != WIFI_AUTH_OPEN));
         cJSON_AddItemToArray(wifi_list_js, wifi_js);
     }
+
     char *data = cJSON_Print(root);
     ESP_LOGI("ApWifi", "WS send %s", data);
     WsServer::GetInstance().WebWsSend((uint8_t *)data, strlen(data));

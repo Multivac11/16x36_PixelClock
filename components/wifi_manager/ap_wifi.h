@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <map>
 #include <vector>
 
 #include <cJSON.h>
@@ -28,10 +29,12 @@ class ApWifi
     static ApWifi &GetInstance()
     {
         static ApWifi instance;
+
         return instance;
     }
 
     ApWifi() = default;
+
     ~ApWifi() = default;
 
     static void ApWifiTask(void *);

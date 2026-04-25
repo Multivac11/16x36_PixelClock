@@ -14,15 +14,18 @@ class Sht40
     static Sht40 &GetInstance()
     {
         static Sht40 instance;
+
         return instance;
     }
 
     Sht40() = default;
+
     ~Sht40() = default;
 
     struct EnvParamsStruct
     {
         float temperature;
+
         float humidity;
     };
 

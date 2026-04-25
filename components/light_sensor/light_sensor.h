@@ -19,10 +19,12 @@ class LightSensor
     static LightSensor &GetInstance()
     {
         static LightSensor instance;
+
         return instance;
     }
 
     LightSensor() = default;
+
     ~LightSensor() = default;
 
     void InitLightSensor();

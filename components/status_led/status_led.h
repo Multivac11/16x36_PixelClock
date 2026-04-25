@@ -6,6 +6,7 @@
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "wifi_manager.h"
 
 class StatusLed
 {
@@ -13,6 +14,7 @@ class StatusLed
     static StatusLed &GetInstance()
     {
         static StatusLed instance;
+
         return instance;
     }
 
@@ -36,13 +38,17 @@ class StatusLed
     void InitStatusLed();
 
    private:
-    static void SetNetworkStatusTask(void *);
+    static void WifiListenerTask(void *);
+
+    static void WifiStatusTask(void *);
 
     static void SetSystemStatusTask(void *);
 
     static void GetStatusTask(void *);
 
-    void NetworkLedStatus();
+    void WifiListener();
+
+    void WifiStatus();
 
     void SystemLedStatus();
 
@@ -52,13 +58,13 @@ class StatusLed
 
     void LedOff(gpio_num_t led_pin);
 
-    void SetLedStatus();
+    void WifiDisconnected();
 
-    void NetworkScanning();
+    void WifiAPmode();
 
-    void NetworkAPmode();
+    void WifiConnected();
 
-    void NetworkOnline();
+    void WifiScanning();
 
     void SystemNormal();
 
@@ -70,4 +76,6 @@ class StatusLed
     NetworkLedStatusEnum network_led_status_ = STATUS_NETWOIRK_SCANING;
 
     SystemLedStatusEnum system_led_status_ = STATUS_SYSTEM_NORMAL;
+
+    WifiManager::WifiStatus wifi_status_ = WifiManager::WifiStatus::WIFI_STATUS_DISCONNECTED;
 };

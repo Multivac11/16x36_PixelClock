@@ -18,6 +18,7 @@ class WsServer
         return instance;
     }
     WsServer() = default;
+
     ~WsServer() = default;
 
     typedef std::function<void(uint8_t *payload, int len)> WsServerCallback;
