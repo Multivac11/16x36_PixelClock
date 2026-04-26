@@ -1,27 +1,29 @@
 set(src_dirs
     status_led
     key
-    sht40
-    I2C
-    SPI
+    i2c_devices
+    i2c_devices/sht40
+    i2c_devices/ds3231
+    spi_devices
+    spi_devices/sdio
     audio_capture
     light_sensor
     ws_matrix
     wifi_manager
-    sdio
 )
 
 set(include_dirs
     status_led
     key
-    sht40
-    I2C
-    SPI
+    i2c_devices
+    i2c_devices/sht40
+    i2c_devices/ds3231
+    spi_devices
+    spi_devices/sdio
     audio_capture
     light_sensor
     ws_matrix
     wifi_manager
-    sdio
 )
 
 set(required_components

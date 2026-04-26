@@ -5,8 +5,8 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-#define I2C_MASTER_SCL_IO GPIO_NUM_47 /*!< GPIO number used for I2C master clock */
-#define I2C_MASTER_SDA_IO GPIO_NUM_48 /*!< GPIO number used for I2C master data  */
+#define I2C_MASTER_SCL_IO GPIO_NUM_48 /*!< GPIO number used for I2C master clock */
+#define I2C_MASTER_SDA_IO GPIO_NUM_47 /*!< GPIO number used for I2C master data  */
 #define I2C_MASTER_NUM I2C_NUM_0      /*!< I2C port number for master dev */
 #define I2C_MASTER_FREQ_HZ 100000     /*!< I2C master clock frequency */
 #define I2C_MASTER_TX_BUF_DISABLE 0   /*!< I2C master doesn't need buffer */
@@ -31,6 +31,4 @@ class I2CMaster
 
    public:
     i2c_master_bus_handle_t bus_handle_;
-
-    i2c_master_dev_handle_t dev_handle_;
 };

@@ -67,8 +67,7 @@ bool Sht40::RegisterSht40()
                                       .scl_wait_us = 100,
                                       .flags = {.disable_ack_check = true}};
 
-    ret = i2c_master_bus_add_device(I2CMaster::GetInstance().bus_handle_, &dev_config,
-                                    &I2CMaster::GetInstance().dev_handle_);
+    ret = i2c_master_bus_add_device(I2CMaster::GetInstance().bus_handle_, &dev_config, &dev_handle_);
     if (ret != ESP_OK)
     {
         ESP_LOGE("Sht40", "Failed to add SHT40 sensor to I2C bus");
@@ -81,7 +80,7 @@ void Sht40::ReadRawData(uint8_t *data)
 {
     uint8_t controlid = 0xFD;  // 读取数据指令
     uint8_t ret;
-    ret = i2c_master_transmit(I2CMaster::GetInstance().dev_handle_, &controlid, 1, -1);
+    ret = i2c_master_transmit(dev_handle_, &controlid, 1, -1);
     if (ret != ESP_OK)
     {
         ESP_LOGE("Sht40", "I2C transmit failed!");
@@ -89,7 +88,7 @@ void Sht40::ReadRawData(uint8_t *data)
 
     vTaskDelay(pdMS_TO_TICKS(100));
 
-    ret = i2c_master_receive(I2CMaster::GetInstance().dev_handle_, data, 6, -1);
+    ret = i2c_master_receive(dev_handle_, data, 6, -1);
     if (ret != ESP_OK)
     {
         ESP_LOGE("Sht40", "I2C receive failed!");

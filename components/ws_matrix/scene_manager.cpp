@@ -14,10 +14,10 @@ void SceneManager::InitSceneManager()
     alignas(4) uint8_t buf[SPRITE_SIZE];
     sd.ReadFile("/sdcard/img/emoji/smile_16x16.bin", buf, SPRITE_SIZE);
     const Color* bitmap = reinterpret_cast<const Color*>(buf);
-    gfx.drawRGBBitmap(0, 0, bitmap, 16, 16, 25);
+    gfx.drawRGBBitmap(0, 0, bitmap, 16, 16, 15);
     sd.ReadFile("/sdcard/img/emoji/197_16x16.bin", buf, SPRITE_SIZE);
     const Color* bitmap1 = reinterpret_cast<const Color*>(buf);
-    gfx.drawRGBBitmap(16, 0, bitmap1, 16, 16, 25);
+    gfx.drawRGBBitmap(16, 0, bitmap1, 16, 16, 15);
 
     MatrixHal::GetInstance().Refresh();
 }

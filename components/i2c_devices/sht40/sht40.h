@@ -48,4 +48,6 @@ class Sht40
     EnvParamsStruct env_params_;
 
     QueueHandle_t queue_;
+
+    i2c_master_dev_handle_t dev_handle_ = nullptr;
 };
