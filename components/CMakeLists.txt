@@ -32,6 +32,7 @@ set(required_components
     nvs_flash
     lwip
     json
+    led_strip
 )
 
 idf_component_register(

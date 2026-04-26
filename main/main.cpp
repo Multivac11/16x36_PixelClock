@@ -5,9 +5,9 @@
 #include "i2c.h"
 #include "key.h"
 #include "light_sensor.h"
+#include "scene_manager.h"
 #include "sht40.h"
 #include "status_led.h"
-#include "ws_matrix.h"
 
 // TODO:修改测光adc口为GPIO1
 extern "C" void app_main(void)
@@ -19,4 +19,5 @@ extern "C" void app_main(void)
     AudioCapture::GetInstance().InitAudioCapture();
     LightSensor::GetInstance().InitLightSensor();
     ApWifi::GetInstance().ApWifiInit();
+    SceneManager::GetInstance().InitSceneManager();
 }
