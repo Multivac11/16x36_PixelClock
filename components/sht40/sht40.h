@@ -1,9 +1,9 @@
 #pragma once
 
-#include "driver/i2c_master.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "i2c.h"
 
 #define SHT40_ADDR 0x44
 #define I2C_MASTER_FREQ_HZ 100000

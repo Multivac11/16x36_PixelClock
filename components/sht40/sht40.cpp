@@ -1,7 +1,5 @@
 #include "sht40.h"
 
-#include "i2c.h"
-
 void Sht40::InitSht40()
 {
     if (!RegisterSht40())

@@ -3,10 +3,12 @@ set(src_dirs
     key
     sht40
     I2C
+    SPI
     audio_capture
     light_sensor
     ws_matrix
     wifi_manager
+    sdio
 )
 
 set(include_dirs
@@ -14,16 +16,19 @@ set(include_dirs
     key
     sht40
     I2C
+    SPI
     audio_capture
     light_sensor
     ws_matrix
     wifi_manager
+    sdio
 )
 
 set(required_components
     driver
     esp_timer
     esp_driver_i2c
+    esp_driver_spi
     esp_adc
     esp_event
     esp_wifi
@@ -33,6 +38,7 @@ set(required_components
     lwip
     json
     led_strip
+    fatfs
 )
 
 idf_component_register(

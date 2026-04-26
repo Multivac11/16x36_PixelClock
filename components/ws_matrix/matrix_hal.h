@@ -39,16 +39,27 @@ class MatrixHal
 
     // 访问 2D 软件引擎，所有绘图通过这里
     GfxDriver& Gfx() { return gfx_; }
+
     const GfxDriver& Gfx() const { return gfx_; }
+
+    void ShowRaw(const uint8_t* rgb_data);
+
+    void SetBrightness(uint8_t brightness);  // 0~255，默认255
+
+    uint8_t GetBrightness() const { return brightness_; }
 
    private:
     MatrixHal() = default;
     ~MatrixHal() = default;
 
+    static inline uint8_t ScaleBrightness(uint8_t val, uint8_t scale) { return (uint16_t)val * scale / 255; }
+
     // 坐标映射：物理 (x,y) -> LED 串联索引
     static inline int XYToIndex(int x, int y) { return X_LUT[x] + y * BLOCK_WIDTH; }
 
     GfxDriver gfx_;
+
+    uint8_t brightness_ = 255;
 
     led_strip_handle_t led_strip_ = nullptr;
 };

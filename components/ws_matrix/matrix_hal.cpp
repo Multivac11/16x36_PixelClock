@@ -16,7 +16,8 @@ void MatrixHal::MatrixHalInit()
                                          .flags = {.with_dma = LED_STRIP_USE_DMA}};
 
     ESP_ERROR_CHECK(led_strip_new_rmt_device(&strip_config, &rmt_config, &led_strip_));
-    ESP_LOGI(TAG, "Matrix init: %dx%d (%d LEDs)", MATRIX_WIDTH, MATRIX_HEIGHT, LED_STRIP_LED_COUNT);
+    ESP_LOGI(TAG, "Matrix init: %dx%d (%d LEDs), brightness=%d/255", MATRIX_WIDTH, MATRIX_HEIGHT, LED_STRIP_LED_COUNT,
+             brightness_);
 
     // 启动后先全屏暗白色，确认硬件通电
     gfx_.clear(Color(5, 5, 5));
@@ -28,16 +29,38 @@ void MatrixHal::MatrixHalInit()
 
 void MatrixHal::Refresh()
 {
-    // 遍历物理坐标，通过 LUT 映射到 LED 索引，发送整帧
     for (int y = 0; y < MATRIX_HEIGHT; y++)
     {
         for (int x = 0; x < MATRIX_WIDTH; x++)
         {
-            const uint8_t* p = gfx_.getPixelPtr(x, y);  // RGB 指针
+            const uint8_t* p = gfx_.getPixelPtr(x, y);
             int idx = XYToIndex(x, y);
-            // led_strip 内部根据 GRB 格式自动重排，这里直接传 RGB
-            led_strip_set_pixel(led_strip_, idx, p[0], p[1], p[2]);
+
+            // 应用全局亮度
+            uint8_t r = ScaleBrightness(p[0], brightness_);
+            uint8_t g = ScaleBrightness(p[1], brightness_);
+            uint8_t b = ScaleBrightness(p[2], brightness_);
+
+            led_strip_set_pixel(led_strip_, idx, r, g, b);
         }
     }
     ESP_ERROR_CHECK(led_strip_refresh(led_strip_));
+}
+
+void MatrixHal::ShowRaw(const uint8_t* rgb_data)
+{
+    for (int i = 0; i < LED_STRIP_LED_COUNT; i++)
+    {
+        uint8_t r = ScaleBrightness(rgb_data[i * 3 + 0], brightness_);
+        uint8_t g = ScaleBrightness(rgb_data[i * 3 + 1], brightness_);
+        uint8_t b = ScaleBrightness(rgb_data[i * 3 + 2], brightness_);
+        led_strip_set_pixel(led_strip_, i, r, g, b);
+    }
+    ESP_ERROR_CHECK(led_strip_refresh(led_strip_));
+}
+
+void MatrixHal::SetBrightness(uint8_t brightness)
+{
+    brightness_ = brightness;
+    ESP_LOGI(TAG, "Brightness set to %d/255", brightness_);
 }

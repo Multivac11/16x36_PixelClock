@@ -4,6 +4,9 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "matrix_hal.h"
+#include "spi_sdcard.h"
+
+#define SPRITE_SIZE (16 * 16 * 3)
 
 class SceneManager
 {
