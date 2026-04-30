@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Mod Tool | 像素取模工作台 v3 (帧管理)</title>
+    <style>
+        :root {
+            --bg: #0f0f1a;
+            --panel: #16162a;
+            --panel2: #1e1e3a;
+            --accent: #ff2a6d;
+            --accent2: #05d9e8;
+            --text: #e0e0e0;
+            --text2: #a0a0b0;
+            --border: #2a2a4a;
+            --grid: rgba(255, 255, 255, 0.15);
+            --danger: #ff4444;
+            --warn: #ffaa00;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #sidebar {
+            width: 360px;
+            min-width: 360px;
+            background: var(--panel);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            padding: 20px;
+            gap: 18px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 20px;
+            letter-spacing: 2px;
+            color: var(--accent);
+        }
+
+        h2 {
+            margin: 0;
+            font-size: 13px;
+            text-transform: uppercase;
+            color: var(--accent2);
+            letter-spacing: 1px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 6px;
+        }
+
+        .section {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        #dropZone {
+            border: 2px dashed var(--border);
+            border-radius: 8px;
+            padding: 24px;
+            text-align: center;
+            color: var(--text2);
+            cursor: pointer;
+            transition: .2s;
+            background: var(--panel2);
+        }
+
+        #dropZone:hover,
+        #dropZone.dragover {
+            border-color: var(--accent);
+            color: var(--text);
+            background: #252545;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--text2);
+        }
+
+        .info-row span:last-child {
+            color: var(--text);
+            font-family: monospace;
+        }
+
+        .control {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .control label {
+            font-size: 12px;
+            color: var(--text2);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .control label span.val {
+            color: var(--accent2);
+            font-family: monospace;
+            min-width: 40px;
+            text-align: right;
+        }
+
+        input[type=range] {
+            width: 100%;
+            accent-color: var(--accent);
+            cursor: pointer;
+        }
+
+        input[type=color] {
+            width: 100%;
+            height: 32px;
+            border: none;
+            background: none;
+            cursor: pointer;
+        }
+
+        select,
+        input[type=number],
+        input[type=text] {
+            background: var(--panel2);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 6px 8px;
+            border-radius: 4px;
+            font-size: 13px;
+            outline: none;
+        }
+
+        select:focus,
+        input:focus {
+            border-color: var(--accent2);
+        }
+
+        .row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .row>* {
+            flex: 1;
+        }
+
+        .chk {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .chk input {
+            accent-color: var(--accent);
+        }
+
+        button {
+            border: none;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: .15s;
+            font-weight: 600;
+            letter-spacing: .5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(90deg, var(--accent), #d61a55);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            filter: brightness(1.15);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: var(--panel2);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--accent2);
+            color: var(--accent2);
+        }
+
+        .btn-danger {
+            background: var(--panel2);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+        }
+
+        .btn-danger:hover {
+            background: var(--danger);
+            color: #fff;
+        }
+
+        .btn-warn {
+            background: var(--panel2);
+            color: var(--warn);
+            border: 1px solid var(--warn);
+            font-size: 11px;
+            padding: 4px 8px;
+        }
+
+        .btn-warn:hover {
+            background: var(--warn);
+            color: #000;
+        }
+
+        .preset-bar {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .preset-bar button {
+            padding: 4px 10px;
+            font-size: 11px;
+        }
+
+        #main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        #toolbar {
+            height: 48px;
+            background: var(--panel);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            gap: 12px;
+            font-size: 13px;
+            color: var(--text2);
+        }
+
+        #canvasWrap {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: auto;
+            padding: 40px;
+            gap: 40px;
+        }
+
+        .preview-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .preview-box .title {
+            font-size: 11px;
+            color: var(--text2);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .canvas-host {
+            position: relative;
+            background: #050510;
+            box-shadow: 0 0 0 1px var(--border), 0 10px 30px rgba(0, 0, 0, .5);
+            image-rendering: pixelated;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            image-rendering: pixelated;
+        }
+
+        .grid-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            background-size: var(--gs) var(--gs);
+            background-image:
+                linear-gradient(to right, var(--grid) 1px, transparent 1px),
+                linear-gradient(to bottom, var(--grid) 1px, transparent 1px);
+        }
+
+        #hint {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--panel2);
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            color: var(--text2);
+            pointer-events: none;
+            opacity: 0;
+            transition: .3s;
+        }
+
+        #hint.show {
+            opacity: 1;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* 帧缩略图 */
+        #frameThumbs {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            max-height: 160px;
+            overflow-y: auto;
+            padding: 4px;
+            background: var(--panel2);
+            border-radius: 4px;
+            border: 1px solid var(--border);
+        }
+
+        .thumb-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            position: relative;
+        }
+
+        .thumb {
+            width: 32px;
+            height: 32px;
+            image-rendering: pixelated;
+            border: 2px solid transparent;
+            border-radius: 2px;
+            cursor: pointer;
+            background: #000;
+        }
+
+        .thumb.active {
+            border-color: var(--accent);
+        }
+
+        .thumb.empty {
+            border-color: var(--warn);
+            opacity: 0.5;
+        }
+
+        .thumb-label {
+            font-size: 9px;
+            color: var(--text2);
+            font-family: monospace;
+        }
+
+        .thumb-del {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--danger);
+            color: #fff;
+            border: none;
+            font-size: 10px;
+            line-height: 14px;
+            cursor: pointer;
+            display: none;
+            padding: 0;
+            text-align: center;
+        }
+
+        .thumb-wrap:hover .thumb-del {
+            display: block;
+        }
+
+        .thumb-del:hover {
+            background: #ff2222;
+            transform: scale(1.1);
+        }
+
+        /* 精灵表网格 */
+        .sheet-grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+        }
+
+        .sheet-grid-line-v {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background: var(--accent);
+            opacity: 0.6;
+        }
+
+        .sheet-grid-line-h {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: var(--accent);
+            opacity: 0.6;
+        }
+
+        .sheet-cell-label {
+            position: absolute;
+            background: var(--accent);
+            color: #fff;
+            font-size: 10px;
+            padding: 1px 4px;
+            border-radius: 2px;
+            opacity: 0.8;
+            pointer-events: none;
+        }
+
+        /* 帧操作栏 */
+        .frame-ops {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            justify-content: center;
+            margin-top: 4px;
+        }
+    </style>
+    <base target="_blank">
+    <base target="_blank">
+</head>
+
+<body>
+    <div id="sidebar">
+        <h1>PIXEL MOD <span style="font-size:12px;color:var(--accent2);">v3.0</span></h1>
+
+        <div class="section">
+            <h2>上传图片</h2>
+            <div id="dropZone">拖拽图片到此处 或 点击上传<br><small>支持 PNG / JPG / BMP / 精灵表</small></div>
+            <input type="file" id="fileInput" accept="image/png,image/jpeg,image/bmp">
+        </div>
+
+        <div class="section" id="infoSection">
+            <h2>图像信息</h2>
+            <div class="info-row"><span>原始尺寸</span><span id="infoSize">-</span></div>
+            <div class="info-row"><span>帧数 / 单帧尺寸</span><span id="infoFrames">-</span></div>
+            <div class="info-row"><span>输出字节</span><span id="infoBytes">-</span></div>
+            <div class="info-row"><span>导出模式</span><span id="infoMode">Sprite</span></div>
+        </div>
+
+        <div class="section">
+            <h2>模式选择</h2>
+            <div class="control">
+                <label>图像模式</label>
+                <select id="imgMode">
+                    <option value="single">单张图片 (Sprite)</option>
+                    <option value="sheet">精灵表 / 动画 (Sprite Sheet)</option>
+                </select>
+            </div>
+            <div id="sheetOpts" class="hidden" style="gap:8px; display:flex; flex-direction:column;">
+                <div class="row">
+                    <div class="control"><label>列数 (Cols)</label><input type="number" id="sheetCols" value="3" min="1"
+                            max="20"></div>
+                    <div class="control"><label>行数 (Rows)</label><input type="number" id="sheetRows" value="2" min="1"
+                            max="20"></div>
+                </div>
+                <div class="control">
+                    <label>动画速度 <span class="val" id="v-animSpeed">200 ms</span></label>
+                    <input type="range" id="animSpeed" min="20" max="1000" value="200">
+                </div>
+                <label class="chk"><input type="checkbox" id="autoSkipEmpty"> 自动检测并标记空白帧</label>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>快速预设</h2>
+            <div class="preset-bar">
+                <button class="btn-secondary" onclick="applyPreset('reset')">重置</button>
+                <button class="btn-secondary" onclick="applyPreset('mono')">黑白</button>
+                <button class="btn-secondary" onclick="applyPreset('gameboy')">复古</button>
+                <button class="btn-secondary" onclick="applyPreset('vivid')">鲜艳</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>色彩调整</h2>
+            <div class="control">
+                <label>亮度 <span class="val" id="v-brightness">0</span></label>
+                <input type="range" id="brightness" min="-100" max="100" value="0">
+            </div>
+            <div class="control">
+                <label>对比度 <span class="val" id="v-contrast">0</span></label>
+                <input type="range" id="contrast" min="-100" max="100" value="0">
+            </div>
+            <div class="control">
+                <label>饱和度 <span class="val" id="v-saturation">100</span></label>
+                <input type="range" id="saturation" min="0" max="200" value="100">
+            </div>
+            <div class="control">
+                <label>色相旋转 <span class="val" id="v-hue">0°</span></label>
+                <input type="range" id="hue" min="0" max="360" value="0">
+            </div>
+            <div class="control">
+                <label>伽马校正 <span class="val" id="v-gamma">1.00</span></label>
+                <input type="range" id="gamma" min="10" max="300" value="100">
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>像素化选项</h2>
+            <div class="control">
+                <label>颜色深度 (Bits/Channel) <span class="val" id="v-depth">8</span></label>
+                <input type="range" id="depth" min="1" max="8" value="8">
+            </div>
+            <div class="control">
+                <label>透明阈值 <span class="val" id="v-alpha">128</span></label>
+                <input type="range" id="alpha" min="0" max="255" value="128">
+            </div>
+            <div class="control">
+                <label>背景填充色</label>
+                <input type="color" id="bgColor" value="#000000">
+            </div>
+            <label class="chk"><input type="checkbox" id="dither"> 启用 ordered dithering (2×2 Bayer)</label>
+        </div>
+
+        <div class="section">
+            <h2>预览与导出</h2>
+            <div class="control">
+                <label>预览缩放 <span class="val" id="v-scale">20×</span></label>
+                <input type="range" id="scale" min="1" max="40" value="20">
+            </div>
+            <label class="chk"><input type="checkbox" id="showGrid" checked> 显示网格</label>
+
+            <div class="control" style="margin-top:6px;">
+                <label>导出模式</label>
+                <select id="exportMode">
+                    <option value="sprite">Sprite — 原始尺寸 RGB</option>
+                    <option value="frame">Frame — 36×16 屏幕映射</option>
+                    <option value="anim">Animation — 所有帧合并数组</option>
+                </select>
+            </div>
+
+            <div id="frameOpts" class="hidden" style="gap:8px; display:flex; flex-direction:column;">
+                <div class="row">
+                    <div class="control"><label>Offset X</label><input type="number" id="offX" value="10" min="0"
+                            max="35"></div>
+                    <div class="control"><label>Offset Y</label><input type="number" id="offY" value="0" min="0"
+                            max="15"></div>
+                </div>
+            </div>
+
+            <div class="control" style="margin-top:6px;">
+                <label>文件名前缀</label>
+                <input type="text" id="fileName" value="sprite" placeholder="sprite">
+            </div>
+
+            <button class="btn-primary" id="btnExport" style="margin-top:8px;">导出 .bin</button>
+            <button class="btn-secondary" id="btnExportH">导出 .h (C 数组)</button>
+        </div>
+    </div>
+
+    <div id="main">
+        <div id="toolbar">
+            <b>预览工作台</b>
+            <span style="margin-left:auto;">提示：点击帧缩略图可查看单帧，悬停显示删除按钮</span>
+        </div>
+        <div id="canvasWrap">
+            <div class="preview-box" id="boxOrig">
+                <div class="title">Original / 精灵表</div>
+                <div class="canvas-host" id="hostOrig">
+                    <canvas id="origCanvas"></canvas>
+                    <div class="sheet-grid" id="sheetGrid"></div>
+                </div>
+            </div>
+            <div class="preview-box" id="boxProc">
+                <div class="title">Processed Frame</div>
+                <div class="canvas-host" id="hostProc">
+                    <canvas id="procCanvas"></canvas>
+                    <div class="grid-layer" id="gridLayer"></div>
+                </div>
+            </div>
+            <div class="preview-box" id="boxAnim">
+                <div class="title">Animation Preview</div>
+                <div class="canvas-host" id="hostAnim">
+                    <canvas id="animCanvas"></canvas>
+                    <div class="grid-layer" id="animGridLayer"></div>
+                </div>
+                <div id="frameThumbs"></div>
+                <div class="frame-ops">
+                    <button class="btn-warn" onclick="removeEmptyFrames()">🗑 删除空白帧</button>
+                    <button class="btn-secondary" style="font-size:11px;padding:4px 8px;" onclick="restoreAllFrames()">↺
+                        恢复全部</button>
+                </div>
+            </div>
+        </div>
+        <div id="hint"></div>
+    </div>
+
+    <script>
+        const state = {
+            img: null, width: 0, height: 0, origData: null,
+            frames: [],          // 当前保留的帧列表 {data, width, height, origIdx}
+            allFrames: [],       // 原始切割的全部帧（用于恢复）
+            animTimer: null, currentFrame: 0,
+            removedIndices: new Set(),
+        };
+
+        const MATRIX_W = 36, MATRIX_H = 16, PANEL_W = 9;
+        const X_LUT = [0, 1, 2, 3, 4, 5, 6, 7, 8, 144, 145, 146, 147, 148, 149, 150, 151, 152, 288, 289, 290, 291, 292, 293, 294, 295, 296, 432, 433, 434, 435, 436, 437, 438, 439, 440];
+        const xyToIndex = (x, y) => X_LUT[x] + y * PANEL_W;
+
+        const $ = id => document.getElementById(id);
+        const inputs = {
+            brightness: $('brightness'), contrast: $('contrast'), saturation: $('saturation'),
+            hue: $('hue'), gamma: $('gamma'), depth: $('depth'), alpha: $('alpha'),
+            bgColor: $('bgColor'), dither: $('dither'), scale: $('scale'), showGrid: $('showGrid'),
+            exportMode: $('exportMode'), offX: $('offX'), offY: $('offY'), fileName: $('fileName'),
+            imgMode: $('imgMode'), sheetCols: $('sheetCols'), sheetRows: $('sheetRows'), animSpeed: $('animSpeed'),
+            autoSkipEmpty: $('autoSkipEmpty')
+        };
+        const labels = {
+            brightness: $('v-brightness'), contrast: $('v-contrast'), saturation: $('v-saturation'),
+            hue: $('v-hue'), gamma: $('v-gamma'), depth: $('v-depth'), alpha: $('v-alpha'), scale: $('v-scale'),
+            animSpeed: $('v-animSpeed')
+        };
+
+        /* ===================== 事件绑定 ===================== */
+        $('dropZone').addEventListener('click', () => $('fileInput').click());
+        $('fileInput').addEventListener('change', e => handleFile(e.target.files[0]));
+        const dz = $('dropZone');
+        ['dragenter', 'dragover'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('dragover'); }));
+        ['dragleave', 'drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('dragover'); if (ev === 'drop') handleFile(e.dataTransfer.files[0]); }));
+
+        Object.keys(inputs).forEach(k => {
+            const el = inputs[k]; if (!el) return;
+            el.addEventListener('input', () => {
+                if (labels[k]) {
+                    let v = el.value;
+                    if (k === 'hue') v += '°'; if (k === 'gamma') v = (v / 100).toFixed(2);
+                    if (k === 'scale') v += '×'; if (k === 'animSpeed') v += ' ms';
+                    labels[k].textContent = v;
+                }
+                if (k === 'exportMode') $('frameOpts').classList.toggle('hidden', el.value !== 'frame');
+                if (k === 'imgMode') {
+                    $('sheetOpts').classList.toggle('hidden', el.value !== 'sheet');
+                    $('boxAnim').style.display = el.value === 'sheet' ? 'flex' : 'none';
+                    if (el.value === 'sheet') { startAnimPreview(); } else { stopAnimPreview(); }
+                }
+                if (['sheetCols', 'sheetRows', 'brightness', 'contrast', 'saturation', 'hue', 'gamma', 'depth', 'alpha', 'bgColor', 'dither', 'autoSkipEmpty'].includes(k)) {
+                    if (inputs.imgMode.value === 'sheet' && state.img) processSheet();
+                }
+                render();
+            });
+        });
+
+        $('btnExport').addEventListener('click', () => doExport('bin'));
+        $('btnExportH').addEventListener('click', () => doExport('h'));
+
+        /* ===================== 文件处理 ===================== */
+        function handleFile(file) {
+            if (!file) return;
+            const img = new Image();
+            img.onload = () => {
+                state.img = img;
+                state.width = img.naturalWidth;
+                state.height = img.naturalHeight;
+                const c = document.createElement('canvas');
+                c.width = state.width; c.height = state.height;
+                const ctx = c.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                state.origData = ctx.getImageData(0, 0, state.width, state.height).data;
+
+                const oCtx = $('origCanvas').getContext('2d');
+                $('origCanvas').width = state.width; $('origCanvas').height = state.height;
+                oCtx.drawImage(img, 0, 0);
+
+                $('infoSize').textContent = `${state.width} × ${state.height}`;
+                state.removedIndices.clear();
+                updateInfo();
+
+                if (inputs.imgMode.value === 'sheet') {
+                    processSheet();
+                    startAnimPreview();
+                } else {
+                    state.frames = []; state.allFrames = [];
+                    render();
+                }
+                toast(`已加载 ${file.name}`);
+            };
+            img.src = URL.createObjectURL(file);
+        }
+
+        function updateInfo() {
+            const mode = inputs.exportMode.value;
+            const imgMode = inputs.imgMode.value;
+            let bytes = 0;
+            if (imgMode === 'single') {
+                if (mode === 'sprite') bytes = state.width * state.height * 3;
+                else if (mode === 'frame') bytes = MATRIX_W * MATRIX_H * 3;
+                else bytes = state.width * state.height * 3;
+            } else {
+                const n = state.frames.length;
+                if (n === 0) { $('infoFrames').textContent = '-'; $('infoBytes').textContent = '-'; return; }
+                const fw = state.frames[0].width, fh = state.frames[0].height;
+                if (mode === 'sprite') bytes = n * fw * fh * 3;
+                else if (mode === 'frame') bytes = n * MATRIX_W * MATRIX_H * 3;
+                else bytes = n * fw * fh * 3;
+                $('infoFrames').textContent = `${n} 帧 / ${fw}×${fh}`;
+            }
+            $('infoBytes').textContent = bytes + ' B';
+            $('infoMode').textContent = mode === 'sprite' ? 'Sprite' : (mode === 'frame' ? 'Frame' : 'Animation');
+        }
+        inputs.exportMode.addEventListener('change', updateInfo);
+
+        /* ===================== 精灵表处理 ===================== */
+        function processSheet() {
+            if (!state.img) return;
+            const cols = +inputs.sheetCols.value;
+            const rows = +inputs.sheetRows.value;
+            const fw = Math.floor(state.width / cols);
+            const fh = Math.floor(state.height / rows);
+            const params = getParams();
+            const autoSkip = inputs.autoSkipEmpty.checked;
+
+            state.allFrames = [];
+            state.frames = [];
+            state.removedIndices.clear();
+
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const origIdx = r * cols + c;
+                    const frameData = new Uint8ClampedArray(fw * fh * 4);
+                    let hasVisible = false;
+                    for (let y = 0; y < fh; y++) {
+                        for (let x = 0; x < fw; x++) {
+                            const srcIdx = ((r * fh + y) * state.width + (c * fw + x)) * 4;
+                            const dstIdx = (y * fw + x) * 4;
+                            const [pr, pg, pb] = processPixel(
+                                state.origData[srcIdx], state.origData[srcIdx + 1],
+                                state.origData[srcIdx + 2], state.origData[srcIdx + 3],
+                                x, y, params
+                            );
+                            frameData[dstIdx] = pr;
+                            frameData[dstIdx + 1] = pg;
+                            frameData[dstIdx + 2] = pb;
+                            frameData[dstIdx + 3] = 255;
+                            if (pr > 0 || pg > 0 || pb > 0) hasVisible = true;
+                        }
+                    }
+                    const fr = { data: frameData, width: fw, height: fh, origIdx, isEmpty: !hasVisible };
+                    state.allFrames.push(fr);
+                    if (!autoSkip || hasVisible) {
+                        state.frames.push(fr);
+                    } else {
+                        state.removedIndices.add(origIdx);
+                    }
+                }
+            }
+
+            // 绘制精灵表网格 + 标签
+            const grid = $('sheetGrid');
+            grid.innerHTML = '';
+            for (let i = 1; i < cols; i++) {
+                const line = document.createElement('div');
+                line.className = 'sheet-grid-line-v';
+                line.style.left = (i * fw) + 'px';
+                grid.appendChild(line);
+            }
+            for (let i = 1; i < rows; i++) {
+                const line = document.createElement('div');
+                line.className = 'sheet-grid-line-h';
+                line.style.top = (i * fh) + 'px';
+                grid.appendChild(line);
+            }
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const idx = r * cols + c;
+                    const lbl = document.createElement('div');
+                    lbl.className = 'sheet-cell-label';
+                    lbl.textContent = idx;
+                    lbl.style.left = (c * fw + 2) + 'px';
+                    lbl.style.top = (r * fh + 2) + 'px';
+                    if (state.removedIndices.has(idx)) {
+                        lbl.style.background = 'var(--warn)';
+                        lbl.style.color = '#000';
+                        lbl.textContent = idx + '×';
+                    }
+                    grid.appendChild(lbl);
+                }
+            }
+
+            rebuildThumbs();
+            renderFrame(0);
+            updateInfo();
+        }
+
+        /* ===================== 帧管理 ===================== */
+        function rebuildThumbs() {
+            const thumbs = $('frameThumbs');
+            thumbs.innerHTML = '';
+            state.frames.forEach((fr, idx) => {
+                const wrap = document.createElement('div');
+                wrap.className = 'thumb-wrap';
+
+                const cvs = document.createElement('canvas');
+                cvs.width = fr.width; cvs.height = fr.height;
+                cvs.className = 'thumb' + (fr.isEmpty ? ' empty' : '');
+                cvs.getContext('2d').putImageData(new ImageData(fr.data, fr.width, fr.height), 0, 0);
+                cvs.addEventListener('click', () => {
+                    state.currentFrame = idx;
+                    renderFrame(idx);
+                    document.querySelectorAll('.thumb').forEach(t => t.classList.remove('active'));
+                    cvs.classList.add('active');
+                });
+
+                const del = document.createElement('button');
+                del.className = 'thumb-del';
+                del.textContent = '×';
+                del.title = '删除此帧';
+                del.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    removeFrameByListIndex(idx);
+                });
+
+                const lbl = document.createElement('div');
+                lbl.className = 'thumb-label';
+                lbl.textContent = `#${fr.origIdx}`;
+
+                wrap.appendChild(cvs);
+                wrap.appendChild(del);
+                wrap.appendChild(lbl);
+                thumbs.appendChild(wrap);
+            });
+        }
+
+        function removeFrameByListIndex(listIdx) {
+            if (state.frames.length <= 1) { toast('至少保留一帧'); return; }
+            const fr = state.frames[listIdx];
+            state.removedIndices.add(fr.origIdx);
+            state.frames.splice(listIdx, 1);
+            if (state.currentFrame >= state.frames.length) state.currentFrame = 0;
+            rebuildThumbs();
+            renderFrame(state.currentFrame);
+            updateInfo();
+            toast(`已删除帧 #${fr.origIdx}，剩余 ${state.frames.length} 帧`);
+        }
+
+        function removeEmptyFrames() {
+            if (!state.allFrames.length) return;
+            const before = state.frames.length;
+            state.frames = state.frames.filter(fr => !fr.isEmpty);
+            state.frames.forEach(fr => state.removedIndices.delete(fr.origIdx));
+            state.allFrames.forEach(fr => { if (fr.isEmpty) state.removedIndices.add(fr.origIdx); });
+            if (state.frames.length === 0) {
+                toast('没有非空帧，已保留全部');
+                state.frames = [...state.allFrames];
+                state.removedIndices.clear();
+            }
+            if (state.currentFrame >= state.frames.length) state.currentFrame = 0;
+            rebuildThumbs();
+            renderFrame(state.currentFrame);
+            updateInfo();
+            const removed = before - state.frames.length;
+            if (removed > 0) toast(`已删除 ${removed} 个空白帧，剩余 ${state.frames.length} 帧`);
+            else toast('没有空白帧可删除');
+        }
+
+        function restoreAllFrames() {
+            if (!state.allFrames.length) return;
+            state.frames = [...state.allFrames];
+            state.removedIndices.clear();
+            state.currentFrame = 0;
+            rebuildThumbs();
+            renderFrame(0);
+            updateInfo();
+            toast(`已恢复全部 ${state.frames.length} 帧`);
+        }
+
+        /* ===================== 颜色算法 ===================== */
+        function clamp(v) { return Math.max(0, Math.min(255, Math.round(v))); }
+        function rgbToHsl(r, g, b) {
+            r /= 255; g /= 255; b /= 255;
+            const max = Math.max(r, g, b), min = Math.min(r, g, b);
+            let h, s, l = (max + min) / 2;
+            if (max === min) { h = s = 0; }
+            else {
+                const d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                switch (max) {
+                    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                    case g: h = (b - r) / d + 2; break;
+                    case b: h = (r - g) / d + 4; break;
+                }
+                h /= 6;
+            }
+            return [h, s, l];
+        }
+        function hslToRgb(h, s, l) {
+            let r, g, b;
+            if (s === 0) { r = g = b = l; }
+            else {
+                const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                const p = 2 * l - q;
+                const f = (t) => {
+                    if (t < 0) t += 1; if (t > 1) t -= 1;
+                    if (t < 1 / 6) return p + (q - p) * 6 * t;
+                    if (t < 1 / 2) return q;
+                    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+                    return p;
+                };
+                r = f(h + 1 / 3); g = f(h); b = f(h - 1 / 3);
+            }
+            return [r * 255, g * 255, b * 255];
+        }
+        function hexToRgb(hex) {
+            const n = hex.replace('#', '');
+            return { r: parseInt(n.substr(0, 2), 16), g: parseInt(n.substr(2, 2), 16), b: parseInt(n.substr(4, 2), 16) };
+        }
+        const BAYER = [[0, 2], [3, 1]];
+
+        function processPixel(r, g, b, a, x, y, params) {
+            const bg = hexToRgb(params.bgColor);
+            if (a < params.alpha) { r = bg.r; g = bg.g; b = bg.b; }
+            r += params.brightness; g += params.brightness; b += params.brightness;
+            const factor = (259 * (params.contrast + 255)) / (255 * (259 - params.contrast));
+            r = factor * (r - 128) + 128;
+            g = factor * (g - 128) + 128;
+            b = factor * (b - 128) + 128;
+            if (params.saturation !== 100 || params.hue !== 0) {
+                let [h, s, l] = rgbToHsl(r, g, b);
+                s *= (params.saturation / 100);
+                h += (params.hue / 360);
+                if (h > 1) h -= 1; if (h < 0) h += 1;
+                [r, g, b] = hslToRgb(h, s, l);
+            }
+            if (params.gamma !== 1.0) {
+                r = 255 * Math.pow(Math.max(0, r) / 255, params.gamma);
+                g = 255 * Math.pow(Math.max(0, g) / 255, params.gamma);
+                b = 255 * Math.pow(Math.max(0, b) / 255, params.gamma);
+            }
+            if (params.depth < 8) {
+                const levels = 1 << params.depth;
+                const step = 255 / (levels - 1);
+                if (params.dither) {
+                    const threshold = (BAYER[y % 2][x % 2] + 0.5) / 4.0 - 0.5;
+                    const noise = threshold * step;
+                    r += noise; g += noise; b += noise;
+                }
+                r = Math.round(Math.round(Math.max(0, r) / step) * step);
+                g = Math.round(Math.round(Math.max(0, g) / step) * step);
+                b = Math.round(Math.round(Math.max(0, b) / step) * step);
+            }
+            return [clamp(r), clamp(g), clamp(b)];
+        }
+
+        function getParams() {
+            return {
+                brightness: +inputs.brightness.value,
+                contrast: +inputs.contrast.value,
+                saturation: +inputs.saturation.value,
+                hue: +inputs.hue.value,
+                gamma: +inputs.gamma.value / 100,
+                depth: +inputs.depth.value,
+                alpha: +inputs.alpha.value,
+                bgColor: inputs.bgColor.value,
+                dither: inputs.dither.checked,
+                scale: +inputs.scale.value,
+                showGrid: inputs.showGrid.checked,
+            };
+        }
+
+        /* ===================== 渲染 ===================== */
+        function render() {
+            if (!state.img) return;
+            if (inputs.imgMode.value === 'sheet') {
+                if (state.frames.length > 0) renderFrame(state.currentFrame);
+            } else {
+                const { width, height, origData } = state;
+                const params = getParams();
+                const outData = new Uint8ClampedArray(width * height * 4);
+                for (let i = 0; i < width * height; i++) {
+                    const idx = i * 4;
+                    const x = i % width, y = Math.floor(i / width);
+                    const [pr, pg, pb] = processPixel(origData[idx], origData[idx + 1], origData[idx + 2], origData[idx + 3], x, y, params);
+                    outData[idx] = pr; outData[idx + 1] = pg; outData[idx + 2] = pb; outData[idx + 3] = 255;
+                }
+                const pc = $('procCanvas');
+                pc.width = width; pc.height = height;
+                pc.getContext('2d').putImageData(new ImageData(outData, width, height), 0, 0);
+                const scale = params.scale;
+                pc.style.width = (width * scale) + 'px'; pc.style.height = (height * scale) + 'px';
+                const gl = $('gridLayer');
+                gl.style.display = params.showGrid ? 'block' : 'none';
+                gl.style.setProperty('--gs', scale + 'px');
+                const oc = $('origCanvas');
+                const oScale = Math.max(1, Math.min(8, Math.floor(320 / width)));
+                oc.style.width = (width * oScale) + 'px'; oc.style.height = (height * oScale) + 'px';
+            }
+        }
+
+        function renderFrame(frameIdx) {
+            if (!state.frames[frameIdx]) return;
+            const fr = state.frames[frameIdx];
+            const params = getParams();
+            const pc = $('procCanvas');
+            pc.width = fr.width; pc.height = fr.height;
+            pc.getContext('2d').putImageData(new ImageData(fr.data, fr.width, fr.height), 0, 0);
+            const scale = params.scale;
+            pc.style.width = (fr.width * scale) + 'px';
+            pc.style.height = (fr.height * scale) + 'px';
+            const gl = $('gridLayer');
+            gl.style.display = params.showGrid ? 'block' : 'none';
+            gl.style.setProperty('--gs', scale + 'px');
+
+            // 高亮当前缩略图
+            document.querySelectorAll('.thumb').forEach((t, i) => {
+                t.classList.toggle('active', i === frameIdx);
+            });
+        }
+
+        /* ===================== 动画预览 ===================== */
+        function startAnimPreview() {
+            stopAnimPreview();
+            if (state.frames.length === 0) return;
+            const cvs = $('animCanvas');
+            const host = $('hostAnim');
+            host.style.display = 'block';
+            const scale = Math.max(4, Math.min(20, Math.floor(200 / state.frames[0].width)));
+            cvs.style.width = (state.frames[0].width * scale) + 'px';
+            cvs.style.height = (state.frames[0].height * scale) + 'px';
+
+            function tick() {
+                const fr = state.frames[state.currentFrame];
+                if (!fr) return;
+                cvs.width = fr.width; cvs.height = fr.height;
+                cvs.getContext('2d').putImageData(new ImageData(fr.data, fr.width, fr.height), 0, 0);
+                cvs.style.width = (fr.width * scale) + 'px';
+                cvs.style.height = (fr.height * scale) + 'px';
+                state.currentFrame = (state.currentFrame + 1) % state.frames.length;
+                // 同步高亮缩略图
+                document.querySelectorAll('.thumb').forEach((t, i) => {
+                    t.classList.toggle('active', i === state.currentFrame);
+                });
+                state.animTimer = setTimeout(tick, +inputs.animSpeed.value);
+            }
+            tick();
+        }
+
+        function stopAnimPreview() {
+            if (state.animTimer) { clearTimeout(state.animTimer); state.animTimer = null; }
+            state.currentFrame = 0;
+        }
+
+        /* ===================== 预设 ===================== */
+        function applyPreset(name) {
+            const p = {
+                reset: { brightness: 0, contrast: 0, saturation: 100, hue: 0, gamma: 100, depth: 8, alpha: 128, dither: false, bgColor: '#000000' },
+                mono: { brightness: 0, contrast: 30, saturation: 0, hue: 0, gamma: 100, depth: 8, alpha: 128, dither: false, bgColor: '#000000' },
+                gameboy: { brightness: 10, contrast: 20, saturation: 0, hue: 0, gamma: 90, depth: 2, alpha: 128, dither: true, bgColor: '#8bac0f' },
+                vivid: { brightness: 0, contrast: 15, saturation: 150, hue: 0, gamma: 110, depth: 8, alpha: 128, dither: false, bgColor: '#000000' },
+            }[name];
+            if (!p) return;
+            inputs.brightness.value = p.brightness; inputs.contrast.value = p.contrast;
+            inputs.saturation.value = p.saturation; inputs.hue.value = p.hue;
+            inputs.gamma.value = p.gamma; inputs.depth.value = p.depth;
+            inputs.alpha.value = p.alpha; inputs.dither.checked = p.dither;
+            inputs.bgColor.value = p.bgColor;
+            Object.keys(labels).forEach(k => {
+                const el = inputs[k]; if (!el) return;
+                let v = el.value; if (k === 'hue') v += '°'; if (k === 'gamma') v = (v / 100).toFixed(2); if (k === 'scale') v += '×'; if (k === 'animSpeed') v += ' ms';
+                labels[k].textContent = v;
+            });
+            if (inputs.imgMode.value === 'sheet' && state.img) processSheet();
+            render();
+            toast('已应用预设：' + name);
+        }
+
+        /* ===================== 导出 ===================== */
+        function doExport(fmt) {
+            if (!state.img) { toast('请先上传图片'); return; }
+            const params = getParams();
+            const mode = inputs.exportMode.value;
+            const prefix = inputs.fileName.value || 'sprite';
+            const imgMode = inputs.imgMode.value;
+
+            if (imgMode === 'sheet' && mode === 'anim') {
+                exportAnimation(fmt, prefix, params);
+                return;
+            }
+
+            let buf, filename;
+            const isSheet = imgMode === 'sheet';
+            const frames = isSheet ? state.frames : [{
+                data: (() => {
+                    const { width, height, origData } = state;
+                    const out = new Uint8ClampedArray(width * height * 4);
+                    for (let i = 0; i < width * height; i++) {
+                        const idx = i * 4;
+                        const x = i % width, y = Math.floor(i / width);
+                        const [pr, pg, pb] = processPixel(origData[idx], origData[idx + 1], origData[idx + 2], origData[idx + 3], x, y, params);
+                        out[idx] = pr; out[idx + 1] = pg; out[idx + 2] = pb; out[idx + 3] = 255;
+                    }
+                    return out;
+                })(),
+                width: state.width,
+                height: state.height
+            }];
+            const fr = frames[0];
+            const fw = fr.width, fh = fr.height;
+
+            if (mode === 'sprite') {
+                buf = new Uint8Array(fw * fh * 3);
+                let ptr = 0;
+                for (let i = 0; i < fw * fh; i++) {
+                    const idx = i * 4;
+                    buf[ptr++] = fr.data[idx]; buf[ptr++] = fr.data[idx + 1]; buf[ptr++] = fr.data[idx + 2];
+                }
+                filename = `${prefix}_${fw}x${fh}.${fmt === 'bin' ? 'bin' : 'h'}`;
+            } else {
+                buf = new Uint8Array(MATRIX_W * MATRIX_H * 3);
+                const bg = hexToRgb(params.bgColor);
+                for (let i = 0; i < buf.length; i += 3) { buf[i] = bg.r; buf[i + 1] = bg.g; buf[i + 2] = bg.b; }
+                const offX = +inputs.offX.value, offY = +inputs.offY.value;
+                for (let y = 0; y < fh; y++) {
+                    for (let x = 0; x < fw; x++) {
+                        const sx = offX + x, sy = offY + y;
+                        if (sx >= 0 && sx < MATRIX_W && sy >= 0 && sy < MATRIX_H) {
+                            const idx = (y * fw + x) * 4;
+                            const ledIdx = xyToIndex(sx, sy) * 3;
+                            buf[ledIdx] = fr.data[idx]; buf[ledIdx + 1] = fr.data[idx + 1]; buf[ledIdx + 2] = fr.data[idx + 2];
+                        }
+                    }
+                }
+                filename = `${prefix}_36x16_frame.${fmt === 'bin' ? 'bin' : 'h'}`;
+            }
+
+            if (fmt === 'bin') {
+                downloadBlob(new Blob([buf], { type: 'application/octet-stream' }), filename);
+            } else {
+                const arr = Array.from(buf);
+                const varName = prefix.replace(/[^a-zA-Z0-9_]/g, '_');
+                let h = `#ifndef ${varName.toUpperCase()}_H\n#define ${varName.toUpperCase()}_H\n\n`;
+                h += `// ${mode === 'sprite' ? fw + 'x' + fh + ' Sprite' : '36x16 Frame'}\n`;
+                h += `// Generated by Pixel Mod Tool\n`;
+                h += `const unsigned char ${varName}_${mode}_data[] = {\n`;
+                for (let i = 0; i < arr.length; i++) {
+                    if (i % 12 === 0) h += '  ';
+                    h += `0x${arr[i].toString(16).padStart(2, '0')},`;
+                    if ((i + 1) % 12 === 0) h += '\n'; else h += ' ';
+                }
+                if (arr.length % 12 !== 0) h += '\n';
+                h += `};\n\n#endif\n`;
+                downloadBlob(new Blob([h], { type: 'text/plain' }), filename);
+            }
+            toast(`已导出 ${filename}`);
+        }
+
+        function exportAnimation(fmt, prefix, params) {
+            const n = state.frames.length;
+            if (n === 0) return;
+            const fw = state.frames[0].width;
+            const fh = state.frames[0].height;
+            const varName = prefix.replace(/[^a-zA-Z0-9_]/g, '_');
+            const totalBytes = n * fw * fh * 3;
+
+            if (fmt === 'bin') {
+                const buf = new Uint8Array(totalBytes);
+                let ptr = 0;
+                for (let f = 0; f < n; f++) {
+                    const fr = state.frames[f];
+                    for (let i = 0; i < fw * fh; i++) {
+                        const idx = i * 4;
+                        buf[ptr++] = fr.data[idx];
+                        buf[ptr++] = fr.data[idx + 1];
+                        buf[ptr++] = fr.data[idx + 2];
+                    }
+                }
+                const filename = `${prefix}_anim_${n}f_${fw}x${fh}.bin`;
+                downloadBlob(new Blob([buf], { type: 'application/octet-stream' }), filename);
+                toast(`已导出 ${filename} (${totalBytes} bytes)`);
+            } else {
+                let h = `#ifndef ${varName.toUpperCase()}_ANIM_H\n#define ${varName.toUpperCase()}_ANIM_H\n\n`;
+                h += `// Animation sprite sheet export\n`;
+                h += `// Frames: ${n}, Size per frame: ${fw}x${fh}\n`;
+                h += `// Total data: ${totalBytes} bytes\n\n`;
+                h += `#define ${varName.toUpperCase()}_FRAME_WIDTH  ${fw}\n`;
+                h += `#define ${varName.toUpperCase()}_FRAME_HEIGHT ${fh}\n`;
+                h += `#define ${varName.toUpperCase()}_FRAME_COUNT  ${n}\n\n`;
+                h += `const unsigned char ${varName}_anim_data[${n}][${fw * fh * 3}] = {\n`;
+                for (let f = 0; f < n; f++) {
+                    h += `  { // Frame ${f} (orig #${state.frames[f].origIdx})\n`;
+                    const fr = state.frames[f];
+                    let line = '    ';
+                    for (let i = 0; i < fw * fh; i++) {
+                        const idx = i * 4;
+                        line += `0x${fr.data[idx].toString(16).padStart(2, '0')},`;
+                        line += `0x${fr.data[idx + 1].toString(16).padStart(2, '0')},`;
+                        line += `0x${fr.data[idx + 2].toString(16).padStart(2, '0')},`;
+                        if ((i + 1) % fw === 0) {
+                            h += line + '\n';
+                            line = '    ';
+                        }
+                    }
+                    h += '  },\n';
+                }
+                h += `};\n\n#endif // ${varName.toUpperCase()}_ANIM_H\n`;
+                const filename = `${prefix}_anim_${n}f_${fw}x${fh}.h`;
+                downloadBlob(new Blob([h], { type: 'text/plain' }), filename);
+                toast(`已导出 ${filename} (${totalBytes} bytes)`);
+            }
+        }
+
+        function downloadBlob(blob, name) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = name; a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function toast(msg) {
+            const h = $('hint'); h.textContent = msg; h.classList.add('show');
+            setTimeout(() => h.classList.remove('show'), 2000);
+        }
+
+        /* ===================== 初始化 ===================== */
+        applyPreset('reset');
+        $('boxAnim').style.display = 'none';
+    </script>
+</body>
+
+</html>

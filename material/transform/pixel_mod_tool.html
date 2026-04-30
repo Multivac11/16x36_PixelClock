@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pixel Mod Tool | 像素取模工作台</title>
+    <title>Pixel Mod Tool | 像素取模工作台 v5 (帧序列)</title>
     <style>
         :root {
             --bg: #0f0f1a;
@@ -16,6 +16,9 @@
             --text2: #a0a0b0;
             --border: #2a2a4a;
             --grid: rgba(255, 255, 255, 0.15);
+            --danger: #ff4444;
+            --warn: #ffaa00;
+            --ok: #00e676;
         }
 
         * {
@@ -32,17 +35,16 @@
             overflow: hidden;
         }
 
-        /* 侧边栏 */
         #sidebar {
-            width: 340px;
-            min-width: 340px;
+            width: 380px;
+            min-width: 380px;
             background: var(--panel);
             border-right: 1px solid var(--border);
             display: flex;
             flex-direction: column;
             overflow-y: auto;
             padding: 20px;
-            gap: 18px;
+            gap: 16px;
         }
 
         h1 {
@@ -68,11 +70,10 @@
             gap: 10px;
         }
 
-        /* 上传区 */
         #dropZone {
             border: 2px dashed var(--border);
             border-radius: 8px;
-            padding: 24px;
+            padding: 20px;
             text-align: center;
             color: var(--text2);
             cursor: pointer;
@@ -91,7 +92,6 @@
             display: none;
         }
 
-        /* 信息卡片 */
         .info-row {
             display: flex;
             justify-content: space-between;
@@ -104,7 +104,6 @@
             font-family: monospace;
         }
 
-        /* 控制项 */
         .control {
             display: flex;
             flex-direction: column;
@@ -177,7 +176,6 @@
             accent-color: var(--accent);
         }
 
-        /* 按钮 */
         button {
             border: none;
             padding: 10px;
@@ -210,6 +208,32 @@
             color: var(--accent2);
         }
 
+        .btn-danger {
+            background: var(--panel2);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+            font-size: 11px;
+            padding: 4px 8px;
+        }
+
+        .btn-danger:hover {
+            background: var(--danger);
+            color: #fff;
+        }
+
+        .btn-warn {
+            background: var(--panel2);
+            color: var(--warn);
+            border: 1px solid var(--warn);
+            font-size: 11px;
+            padding: 4px 8px;
+        }
+
+        .btn-warn:hover {
+            background: var(--warn);
+            color: #000;
+        }
+
         .preset-bar {
             display: flex;
             gap: 6px;
@@ -221,7 +245,6 @@
             font-size: 11px;
         }
 
-        /* 主预览区 */
         #main {
             flex: 1;
             display: flex;
@@ -248,8 +271,8 @@
             justify-content: center;
             position: relative;
             overflow: auto;
-            padding: 40px;
-            gap: 40px;
+            padding: 30px;
+            gap: 30px;
         }
 
         .preview-box {
@@ -280,7 +303,6 @@
             image-rendering: pixelated;
         }
 
-        /* 网格覆盖层 */
         .grid-layer {
             position: absolute;
             top: 0;
@@ -289,12 +311,9 @@
             bottom: 0;
             pointer-events: none;
             background-size: var(--gs) var(--gs);
-            background-image:
-                linear-gradient(to right, var(--grid) 1px, transparent 1px),
-                linear-gradient(to bottom, var(--grid) 1px, transparent 1px);
+            background-image: linear-gradient(to right, var(--grid) 1px, transparent 1px), linear-gradient(to bottom, var(--grid) 1px, transparent 1px);
         }
 
-        /* 提示 */
         #hint {
             position: absolute;
             bottom: 20px;
@@ -315,31 +334,264 @@
             opacity: 1;
         }
 
-        /* 隐藏类 */
         .hidden {
             display: none !important;
         }
+
+        #cropOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            border: 2px dashed var(--accent);
+            background: rgba(255, 42, 109, 0.15);
+            pointer-events: none;
+            display: none;
+            box-sizing: border-box;
+            z-index: 10;
+        }
+
+
+        /* 帧缩略图 */
+        #frameThumbs {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            max-height: 140px;
+            overflow-y: auto;
+            padding: 4px;
+            background: var(--panel2);
+            border-radius: 4px;
+            border: 1px solid var(--border);
+        }
+
+        .thumb-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            position: relative;
+            background: var(--panel);
+            padding: 3px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+        }
+
+        .thumb {
+            width: 40px;
+            height: 40px;
+            image-rendering: pixelated;
+            border: 2px solid transparent;
+            border-radius: 2px;
+            cursor: pointer;
+            background: #000;
+        }
+
+        .thumb.active {
+            border-color: var(--accent);
+        }
+
+        .thumb-label {
+            font-size: 9px;
+            color: var(--text2);
+            font-family: monospace;
+        }
+
+        .thumb-ops {
+            display: flex;
+            gap: 2px;
+        }
+
+        .thumb-btn {
+            width: 18px;
+            height: 18px;
+            border-radius: 3px;
+            border: none;
+            background: var(--panel2);
+            color: var(--text2);
+            font-size: 11px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+
+        .thumb-btn:hover {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .thumb-btn.del:hover {
+            background: var(--danger);
+        }
+
+        /* 精灵表网格 */
+        .sheet-grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+        }
+
+        .sheet-grid-line-v {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background: var(--accent);
+            opacity: 0.6;
+        }
+
+        .sheet-grid-line-h {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: var(--accent);
+            opacity: 0.6;
+        }
+
+        .sheet-cell-label {
+            position: absolute;
+            background: var(--accent);
+            color: #fff;
+            font-size: 10px;
+            padding: 1px 4px;
+            border-radius: 2px;
+            opacity: 0.8;
+            pointer-events: none;
+        }
+
+        .sheet-cell-label.skip {
+            background: var(--warn);
+            color: #000;
+        }
+
+        .frame-ops {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            justify-content: center;
+            margin-top: 4px;
+        }
+
+        /* 序列模式上传列表 */
+        #seqList {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        .seq-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 8px;
+            background: var(--panel2);
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            font-size: 12px;
+        }
+
+        .seq-item .seq-idx {
+            color: var(--accent2);
+            font-family: monospace;
+            min-width: 24px;
+        }
+
+        .seq-item .seq-name {
+            flex: 1;
+            color: var(--text);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .seq-item .seq-size {
+            color: var(--text2);
+            font-family: monospace;
+            font-size: 11px;
+        }
     </style>
+    <base target="_blank">
     <base target="_blank">
 </head>
 
 <body>
-
-    <!-- 侧边栏 -->
     <div id="sidebar">
-        <h1>PIXEL MOD</h1>
+        <h1>PIXEL MOD <span style="font-size:12px;color:var(--accent2);">v5.0</span></h1>
 
         <div class="section">
             <h2>上传图片</h2>
-            <div id="dropZone">拖拽图片到此处 或 点击上传<br><small>支持 PNG / JPG / BMP</small></div>
-            <input type="file" id="fileInput" accept="image/png,image/jpeg,image/bmp">
+            <div id="dropZone">点击上传图片<br><small>支持 PNG / JPG / BMP</small></div>
+            <input type="file" id="fileInput" accept="image/png,image/jpeg,image/bmp" multiple>
+            <div id="seqList" class="hidden"></div>
         </div>
 
         <div class="section" id="infoSection">
             <h2>图像信息</h2>
             <div class="info-row"><span>原始尺寸</span><span id="infoSize">-</span></div>
+            <div class="info-row"><span>帧数 / 单帧尺寸</span><span id="infoFrames">-</span></div>
             <div class="info-row"><span>输出字节</span><span id="infoBytes">-</span></div>
             <div class="info-row"><span>导出模式</span><span id="infoMode">Sprite</span></div>
+        </div>
+
+        <div class="section">
+            <h2>模式选择</h2>
+            <div class="control">
+                <label>图像模式</label>
+                <select id="imgMode">
+                    <option value="single">单张图片 (Sprite)</option>
+                    <option value="sheet">精灵表 / 动画 (Sprite Sheet)</option>
+                    <option value="sequence">帧序列 / 多张图片 (Frame Sequence)</option>
+                </select>
+            </div>
+            <div id="sheetOpts" class="hidden" style="gap:8px; display:flex; flex-direction:column;">
+                <div class="row">
+                    <div class="control"><label>列数 (Cols)</label><input type="number" id="sheetCols" value="3" min="1"
+                            max="40"></div>
+                    <div class="control"><label>行数 (Rows)</label><input type="number" id="sheetRows" value="2" min="1"
+                            max="40"></div>
+                </div>
+                <div class="control">
+                    <label>提取模式</label>
+                    <select id="extractMode">
+                        <option value="all-row">全部 — 行优先</option>
+                        <option value="all-col">全部 — 列优先</option>
+                        <option value="single-col">仅提取某一列</option>
+                        <option value="single-row">仅提取某一行</option>
+                        <option value="range">自定义帧范围</option>
+                    </select>
+                </div>
+                <div id="extractSubOpts" class="hidden" style="gap:8px; display:flex; flex-direction:column;">
+                    <div class="row" id="subOptSingle" style="display:flex;">
+                        <div class="control"><label id="subOptLabel">目标索引 (0-based)</label><input type="number"
+                                id="extractIndex" value="0" min="0"></div>
+                    </div>
+                    <div class="row" id="subOptRange" style="display:none;">
+                        <div class="control"><label>起始帧</label><input type="number" id="rangeStart" value="0" min="0">
+                        </div>
+                        <div class="control"><label>结束帧</label><input type="number" id="rangeEnd" value="5" min="0">
+                        </div>
+                    </div>
+                </div>
+                <div class="control">
+                    <label>动画速度 <span class="val" id="v-animSpeed">200 ms</span></label>
+                    <input type="range" id="animSpeed" min="20" max="1000" value="200">
+                </div>
+                <label class="chk"><input type="checkbox" id="autoSkipEmpty" checked> 自动检测并跳过空白帧</label>
+            </div>
+            <div id="seqOpts" class="hidden" style="gap:8px; display:flex; flex-direction:column;">
+                <div class="control">
+                    <label>动画速度 <span class="val" id="v-seqSpeed">200 ms</span></label>
+                    <input type="range" id="seqSpeed" min="20" max="1000" value="200">
+                </div>
+                <label class="chk"><input type="checkbox" id="seqAutoSkipEmpty" checked> 自动跳过空白帧</label>
+            </div>
         </div>
 
         <div class="section">
@@ -354,61 +606,58 @@
 
         <div class="section">
             <h2>色彩调整</h2>
-            <div class="control">
-                <label>亮度 <span class="val" id="v-brightness">0</span></label>
-                <input type="range" id="brightness" min="-100" max="100" value="0">
-            </div>
-            <div class="control">
-                <label>对比度 <span class="val" id="v-contrast">0</span></label>
-                <input type="range" id="contrast" min="-100" max="100" value="0">
-            </div>
-            <div class="control">
-                <label>饱和度 <span class="val" id="v-saturation">100</span></label>
-                <input type="range" id="saturation" min="0" max="200" value="100">
-            </div>
-            <div class="control">
-                <label>色相旋转 <span class="val" id="v-hue">0°</span></label>
-                <input type="range" id="hue" min="0" max="360" value="0">
-            </div>
-            <div class="control">
-                <label>伽马校正 <span class="val" id="v-gamma">1.00</span></label>
-                <input type="range" id="gamma" min="10" max="300" value="100">
+            <div class="control"><label>亮度 <span class="val" id="v-brightness">0</span></label><input type="range"
+                    id="brightness" min="-100" max="100" value="0"></div>
+            <div class="control"><label>对比度 <span class="val" id="v-contrast">0</span></label><input type="range"
+                    id="contrast" min="-100" max="100" value="0"></div>
+            <div class="control"><label>饱和度 <span class="val" id="v-saturation">100</span></label><input type="range"
+                    id="saturation" min="0" max="200" value="100"></div>
+            <div class="control"><label>色相旋转 <span class="val" id="v-hue">0°</span></label><input type="range" id="hue"
+                    min="0" max="360" value="0"></div>
+            <div class="control"><label>伽马校正 <span class="val" id="v-gamma">1.00</span></label><input type="range"
+                    id="gamma" min="10" max="300" value="100"></div>
+        </div>
+
+        <div class="section">
+            <h2>单帧裁切 (Crop)</h2>
+            <label class="chk"><input type="checkbox" id="enableCrop"> 启用裁切</label>
+            <div id="cropControls" class="hidden" style="gap:8px; display:flex; flex-direction:column; margin-top:8px;">
+                <div class="row">
+                    <div class="control"><label>起始 X</label><input type="number" id="cropX" value="0" min="0"></div>
+                    <div class="control"><label>起始 Y</label><input type="number" id="cropY" value="0" min="0"></div>
+                </div>
+                <div class="row">
+                    <div class="control"><label>宽度 W</label><input type="number" id="cropW" value="16" min="1"
+                            max="512"></div>
+                    <div class="control"><label>高度 H</label><input type="number" id="cropH" value="16" min="1"
+                            max="512"></div>
+                </div>
+                <button class="btn-secondary" onclick="resetCrop()" style="font-size:12px; padding:6px;">重置裁切区域</button>
             </div>
         </div>
 
         <div class="section">
             <h2>像素化选项</h2>
-            <div class="control">
-                <label>颜色深度 (Bits/Channel) <span class="val" id="v-depth">8</span></label>
-                <input type="range" id="depth" min="1" max="8" value="8">
-            </div>
-            <div class="control">
-                <label>透明阈值 <span class="val" id="v-alpha">128</span></label>
-                <input type="range" id="alpha" min="0" max="255" value="128">
-            </div>
-            <div class="control">
-                <label>背景填充色</label>
-                <input type="color" id="bgColor" value="#000000">
-            </div>
+            <div class="control"><label>颜色深度 (Bits/Ch) <span class="val" id="v-depth">8</span></label><input
+                    type="range" id="depth" min="1" max="8" value="8"></div>
+            <div class="control"><label>透明阈值 <span class="val" id="v-alpha">128</span></label><input type="range"
+                    id="alpha" min="0" max="255" value="128"></div>
+            <div class="control"><label>背景填充色</label><input type="color" id="bgColor" value="#000000"></div>
             <label class="chk"><input type="checkbox" id="dither"> 启用 ordered dithering (2×2 Bayer)</label>
         </div>
 
         <div class="section">
             <h2>预览与导出</h2>
-            <div class="control">
-                <label>预览缩放 <span class="val" id="v-scale">20×</span></label>
-                <input type="range" id="scale" min="1" max="40" value="20">
-            </div>
+            <div class="control"><label>预览缩放 <span class="val" id="v-scale">20×</span></label><input type="range"
+                    id="scale" min="1" max="40" value="20"></div>
             <label class="chk"><input type="checkbox" id="showGrid" checked> 显示网格</label>
-
-            <div class="control" style="margin-top:6px;">
-                <label>导出模式</label>
+            <div class="control" style="margin-top:6px;"><label>导出模式</label>
                 <select id="exportMode">
                     <option value="sprite">Sprite — 原始尺寸 RGB</option>
                     <option value="frame">Frame — 36×16 屏幕映射</option>
+                    <option value="anim">Animation — 所有帧合并数组</option>
                 </select>
             </div>
-
             <div id="frameOpts" class="hidden" style="gap:8px; display:flex; flex-direction:column;">
                 <div class="row">
                     <div class="control"><label>Offset X</label><input type="number" id="offX" value="10" min="0"
@@ -417,33 +666,42 @@
                             max="15"></div>
                 </div>
             </div>
-
-            <div class="control" style="margin-top:6px;">
-                <label>文件名前缀</label>
-                <input type="text" id="fileName" value="sprite" placeholder="sprite">
-            </div>
-
+            <div class="control" style="margin-top:6px;"><label>文件名前缀</label><input type="text" id="fileName"
+                    value="sprite" placeholder="sprite"></div>
             <button class="btn-primary" id="btnExport" style="margin-top:8px;">导出 .bin</button>
             <button class="btn-secondary" id="btnExportH">导出 .h (C 数组)</button>
         </div>
     </div>
 
-    <!-- 主区域 -->
     <div id="main">
         <div id="toolbar">
             <b>预览工作台</b>
-            <span style="margin-left:auto;">提示：所有调节实时生效，导出即为当前所见像素</span>
+            <span style="margin-left:auto;">提示：帧序列模式可上传多张独立图片组成动画</span>
         </div>
         <div id="canvasWrap">
             <div class="preview-box" id="boxOrig">
-                <div class="title">Original</div>
-                <div class="canvas-host" id="hostOrig"><canvas id="origCanvas"></canvas></div>
+                <div class="title">Original / 精灵表</div>
+                <div class="canvas-host" id="hostOrig"><canvas id="origCanvas"></canvas>
+                    <div class="sheet-grid" id="sheetGrid"></div>
+                    <div id="cropOverlay"></div>
+                </div>
             </div>
             <div class="preview-box" id="boxProc">
-                <div class="title">Processed</div>
-                <div class="canvas-host" id="hostProc">
-                    <canvas id="procCanvas"></canvas>
+                <div class="title">Processed Frame</div>
+                <div class="canvas-host" id="hostProc"><canvas id="procCanvas"></canvas>
                     <div class="grid-layer" id="gridLayer"></div>
+                </div>
+            </div>
+            <div class="preview-box" id="boxAnim">
+                <div class="title">Animation Preview</div>
+                <div class="canvas-host" id="hostAnim"><canvas id="animCanvas"></canvas>
+                    <div class="grid-layer" id="animGridLayer"></div>
+                </div>
+                <div id="frameThumbs"></div>
+                <div class="frame-ops">
+                    <button class="btn-warn" onclick="removeEmptyFrames()">🗑 删除空白帧</button>
+                    <button class="btn-secondary" style="font-size:11px;padding:4px 8px;" onclick="restoreAllFrames()">↺
+                        恢复全部</button>
                 </div>
             </div>
         </div>
@@ -453,362 +711,661 @@
     <script>
         /* ===================== 状态 ===================== */
         const state = {
-            img: null,        // Image 对象
-            width: 0,
-            height: 0,
-            origData: null,   // Uint8ClampedArray raw rgba
+            img: null, width: 0, height: 0, origData: null,
+            frames: [], allFrames: [], animTimer: null, currentFrame: 0,
+            removedIndices: new Set(),
+            // 序列模式专用
+            seqImages: [], // [{img, name, width, height, data}]
         };
-
         const MATRIX_W = 36, MATRIX_H = 16, PANEL_W = 9;
-        const X_LUT = [
-            0, 1, 2, 3, 4, 5, 6, 7, 8,
-            144, 145, 146, 147, 148, 149, 150, 151, 152,
-            288, 289, 290, 291, 292, 293, 294, 295, 296,
-            432, 433, 434, 435, 436, 437, 438, 439, 440
-        ];
+        const X_LUT = [0, 1, 2, 3, 4, 5, 6, 7, 8, 144, 145, 146, 147, 148, 149, 150, 151, 152, 288, 289, 290, 291, 292, 293, 294, 295, 296, 432, 433, 434, 435, 436, 437, 438, 439, 440];
         const xyToIndex = (x, y) => X_LUT[x] + y * PANEL_W;
 
-        /* ===================== DOM ===================== */
         const $ = id => document.getElementById(id);
         const inputs = {
-            brightness: $('brightness'), contrast: $('contrast'), saturation: $('saturation'),
-            hue: $('hue'), gamma: $('gamma'), depth: $('depth'), alpha: $('alpha'),
-            bgColor: $('bgColor'), dither: $('dither'), scale: $('scale'), showGrid: $('showGrid'),
-            exportMode: $('exportMode'), offX: $('offX'), offY: $('offY'), fileName: $('fileName')
+            brightness: $('brightness'), contrast: $('contrast'), saturation: $('saturation'), hue: $('hue'), gamma: $('gamma'),
+            depth: $('depth'), alpha: $('alpha'), bgColor: $('bgColor'), dither: $('dither'), scale: $('scale'), showGrid: $('showGrid'),
+            exportMode: $('exportMode'), offX: $('offX'), offY: $('offY'), fileName: $('fileName'),
+            imgMode: $('imgMode'), sheetCols: $('sheetCols'), sheetRows: $('sheetRows'), animSpeed: $('animSpeed'),
+            autoSkipEmpty: $('autoSkipEmpty'), extractMode: $('extractMode'), extractIndex: $('extractIndex'),
+            rangeStart: $('rangeStart'), rangeEnd: $('rangeEnd'),
+            seqSpeed: $('seqSpeed'), seqAutoSkipEmpty: $('seqAutoSkipEmpty'),
+            enableCrop: $('enableCrop'), cropX: $('cropX'), cropY: $('cropY'), cropW: $('cropW'), cropH: $('cropH')
         };
         const labels = {
-            brightness: $('v-brightness'), contrast: $('v-contrast'), saturation: $('v-saturation'),
-            hue: $('v-hue'), gamma: $('v-gamma'), depth: $('v-depth'), alpha: $('v-alpha'), scale: $('v-scale')
+            brightness: $('v-brightness'), contrast: $('v-contrast'), saturation: $('v-saturation'), hue: $('v-hue'),
+            gamma: $('v-gamma'), depth: $('v-depth'), alpha: $('v-alpha'), scale: $('v-scale'), animSpeed: $('v-animSpeed'),
+            seqSpeed: $('v-seqSpeed')
         };
 
         /* ===================== 事件绑定 ===================== */
-        $('dropZone').addEventListener('click', () => inputs.fileInput?.click());
-        $('fileInput').addEventListener('change', e => handleFile(e.target.files[0]));
+        $('dropZone').addEventListener('click', () => $('fileInput').click());
+        $('fileInput').addEventListener('change', e => handleFiles(e.target.files));
         const dz = $('dropZone');
-        ['dragenter', 'dragover'].forEach(ev => {
-            dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('dragover'); });
-        });
-        ['dragleave', 'drop'].forEach(ev => {
-            dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('dragover'); if (ev === 'drop') handleFile(e.dataTransfer.files[0]); });
-        });
+        ['dragenter', 'dragover'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('dragover'); }));
+        ['dragleave', 'drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('dragover'); if (ev === 'drop') handleFiles(e.dataTransfer.files); }));
 
-        Object.keys(inputs).forEach(k => {
-            const el = inputs[k];
-            if (!el) return;
+        function bindInput(k) {
+            const el = inputs[k]; if (!el) return;
             el.addEventListener('input', () => {
                 if (labels[k]) {
                     let v = el.value;
-                    if (k === 'hue') v += '°';
-                    if (k === 'gamma') v = (v / 100).toFixed(2);
-                    if (k === 'scale') v += '×';
+                    if (k === 'hue') v += '°'; if (k === 'gamma') v = (v / 100).toFixed(2);
+                    if (k === 'scale') v += '×'; if (k === 'animSpeed' || k === 'seqSpeed') v += ' ms';
                     labels[k].textContent = v;
                 }
                 if (k === 'exportMode') $('frameOpts').classList.toggle('hidden', el.value !== 'frame');
+                if (k === 'imgMode') onModeChange();
+                if (k === 'extractMode') updateExtractSubOpts();
+                if (k === 'enableCrop') {
+                    $('cropControls').classList.toggle('hidden', !inputs.enableCrop.checked);
+                    updateCropOverlay();
+                    if (inputs.imgMode.value === 'sheet' && state.img) processSheet();
+                    if (inputs.imgMode.value === 'sequence' && state.seqImages.length) processSequence();
+                    if (inputs.imgMode.value === 'single' && state.img) render();
+                }
+                if (['sheetCols', 'sheetRows', 'extractMode', 'extractIndex', 'rangeStart', 'rangeEnd', 'brightness', 'contrast', 'saturation', 'hue', 'gamma', 'depth', 'alpha', 'bgColor', 'dither', 'autoSkipEmpty', 'seqAutoSkipEmpty', 'scale', 'cropX', 'cropY', 'cropW', 'cropH', 'enableCrop'].includes(k)) {
+                    if (inputs.imgMode.value === 'sheet' && state.img) processSheet();
+                    if (inputs.imgMode.value === 'sequence' && state.seqImages.length) processSequence();
+                }
+                if (k === 'animSpeed' || k === 'seqSpeed') {
+                    if ((inputs.imgMode.value === 'sheet' || inputs.imgMode.value === 'sequence') && state.frames.length) {
+                        startAnimPreview();
+                    }
+                }
+                if (k === 'scale') updateAnimPreviewSize();
                 render();
             });
-        });
+        }
+        Object.keys(inputs).forEach(bindInput);
 
         $('btnExport').addEventListener('click', () => doExport('bin'));
         $('btnExportH').addEventListener('click', () => doExport('h'));
 
+        function onModeChange() {
+            const mode = inputs.imgMode.value;
+            $('sheetOpts').classList.toggle('hidden', mode !== 'sheet');
+            $('seqOpts').classList.toggle('hidden', mode !== 'sequence');
+            const isAnimMode = (mode === 'sheet' || mode === 'sequence');
+            $('boxAnim').style.display = isAnimMode ? 'flex' : 'none';
+            $('boxOrig').style.display = (mode === 'single' || mode === 'sheet') ? 'flex' : 'none';
+
+            if (mode === 'sheet') {
+                if (state.img) { processSheet(); startAnimPreview(); }
+            } else if (mode === 'sequence') {
+                if (state.seqImages.length) { processSequence(); startAnimPreview(); }
+            } else {
+                stopAnimPreview(); state.frames = []; state.allFrames = []; render();
+            }
+        }
+
+        function updateExtractSubOpts() {
+            const mode = inputs.extractMode.value;
+            const sub = $('extractSubOpts');
+            const single = $('subOptSingle');
+            const range = $('subOptRange');
+            sub.classList.remove('hidden');
+            if (mode === 'single-col' || mode === 'single-row') {
+                single.style.display = 'flex'; range.style.display = 'none';
+                $('subOptLabel').textContent = mode === 'single-col' ? '提取第几列 (0-based)' : '提取第几行 (0-based)';
+            } else if (mode === 'range') {
+                single.style.display = 'none'; range.style.display = 'flex';
+            } else {
+                sub.classList.add('hidden');
+            }
+        }
+
         /* ===================== 文件处理 ===================== */
-        function handleFile(file) {
-            if (!file) return;
+        function resetSheetState() {
+            stopAnimPreview();
+            state.frames = []; state.allFrames = []; state.removedIndices.clear(); state.currentFrame = 0;
+            $('sheetGrid').innerHTML = ''; $('frameThumbs').innerHTML = '';
+        }
+
+        function handleFiles(files) {
+            if (!files || !files.length) return;
+            const mode = inputs.imgMode.value;
+            if (mode === 'sequence') {
+                // 序列模式：追加多张图片
+                Array.from(files).forEach(file => loadSequenceImage(file));
+            } else {
+                // 单张/精灵表模式：只取第一张
+                resetSheetState();
+                state.seqImages = [];
+                loadSingleImage(files[0]);
+            }
+        }
+
+        function loadSingleImage(file) {
             const img = new Image();
             img.onload = () => {
                 state.img = img;
                 state.width = img.naturalWidth;
                 state.height = img.naturalHeight;
-                // 读取原始像素
                 const c = document.createElement('canvas');
                 c.width = state.width; c.height = state.height;
                 const ctx = c.getContext('2d');
                 ctx.drawImage(img, 0, 0);
                 state.origData = ctx.getImageData(0, 0, state.width, state.height).data;
-                // 原始预览
+
                 const oCtx = $('origCanvas').getContext('2d');
                 $('origCanvas').width = state.width; $('origCanvas').height = state.height;
                 oCtx.drawImage(img, 0, 0);
-                // 信息更新
+
                 $('infoSize').textContent = `${state.width} × ${state.height}`;
                 updateInfo();
-                render();
+
+                if (inputs.imgMode.value === 'sheet') { processSheet(); startAnimPreview(); }
+                else { render(); }
                 toast(`已加载 ${file.name}`);
             };
             img.src = URL.createObjectURL(file);
         }
 
-        function updateInfo() {
-            const mode = inputs.exportMode.value;
-            let bytes = 0;
-            if (mode === 'sprite') bytes = state.width * state.height * 3;
-            else bytes = MATRIX_W * MATRIX_H * 3;
-            $('infoBytes').textContent = bytes + ' B';
-            $('infoMode').textContent = mode === 'sprite' ? 'Sprite' : 'Frame';
+        // 序列模式：加载单张图片到 seqImages
+        function loadSequenceImage(file) {
+            const img = new Image();
+            img.onload = () => {
+                const c = document.createElement('canvas');
+                c.width = img.naturalWidth; c.height = img.naturalHeight;
+                const ctx = c.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                const data = ctx.getImageData(0, 0, img.naturalWidth, img.naturalHeight).data;
+                state.seqImages.push({
+                    img, name: file.name,
+                    width: img.naturalWidth, height: img.naturalHeight, data
+                });
+                updateSeqList();
+                // 如果是第一张，自动设为 state.img 用于原始预览
+                if (state.seqImages.length === 1) {
+                    state.img = img; state.width = img.naturalWidth; state.height = img.naturalHeight; state.origData = data;
+                    const oCtx = $('origCanvas').getContext('2d');
+                    $('origCanvas').width = state.width; $('origCanvas').height = state.height;
+                    oCtx.drawImage(img, 0, 0);
+                }
+                processSequence();
+                startAnimPreview();
+                toast(`已添加 ${file.name}，共 ${state.seqImages.length} 帧`);
+            };
+            img.src = URL.createObjectURL(file);
         }
-        inputs.exportMode.addEventListener('change', updateInfo);
 
+        function updateSeqList() {
+            const list = $('seqList');
+            list.classList.remove('hidden');
+            list.innerHTML = '';
+            state.seqImages.forEach((item, idx) => {
+                const div = document.createElement('div');
+                div.className = 'seq-item';
+                div.innerHTML = `
+      <span class="seq-idx">#${idx}</span>
+      <span class="seq-name" title="${item.name}">${item.name}</span>
+      <span class="seq-size">${item.width}×${item.height}</span>
+      <button class="thumb-btn del" title="删除">×</button>
+      <button class="thumb-btn" title="上移" ${idx === 0 ? 'disabled' : ''}>↑</button>
+      <button class="thumb-btn" title="下移" ${idx === state.seqImages.length - 1 ? 'disabled' : ''}>↓</button>
+    `;
+                const btns = div.querySelectorAll('button');
+                btns[0].addEventListener('click', () => removeSeqItem(idx));
+                btns[1].addEventListener('click', () => moveSeqItem(idx, -1));
+                btns[2].addEventListener('click', () => moveSeqItem(idx, 1));
+                list.appendChild(div);
+            });
+        }
+
+        function removeSeqItem(idx) {
+            state.seqImages.splice(idx, 1);
+            updateSeqList();
+            if (state.seqImages.length) { processSequence(); startAnimPreview(); }
+            else { stopAnimPreview(); state.frames = []; state.allFrames = []; $('frameThumbs').innerHTML = ''; }
+            toast(`已删除帧 #${idx}，剩余 ${state.seqImages.length} 帧`);
+        }
+        function moveSeqItem(idx, dir) {
+            const newIdx = idx + dir;
+            if (newIdx < 0 || newIdx >= state.seqImages.length) return;
+            [state.seqImages[idx], state.seqImages[newIdx]] = [state.seqImages[newIdx], state.seqImages[idx]];
+            updateSeqList();
+            processSequence();
+            startAnimPreview();
+        }
+
+        /* ===================== 序列处理 ===================== */
+        function processSequence() {
+            if (!state.seqImages.length) return;
+            const params = getParams();
+            const autoSkip = inputs.seqAutoSkipEmpty.checked;
+
+            // 先对每张图单独裁切，得到各自裁切后尺寸
+            const croppedImages = state.seqImages.map(item => {
+                const crop = getFrameCropRect(item.width, item.height);
+                return cropData(item.data, item.width, item.height, crop);
+            });
+
+            // 以第一张裁切后的尺寸为基准
+            const fw = croppedImages[0].width;
+            const fh = croppedImages[0].height;
+
+            state.allFrames = [];
+            state.frames = [];
+            state.removedIndices.clear();
+
+            croppedImages.forEach((cropped, idx) => {
+                const frameData = new Uint8ClampedArray(fw * fh * 4);
+                let hasVisible = false;
+
+                // 如果尺寸与基准不一致，先缩放到基准尺寸
+                const tmp = document.createElement('canvas');
+                tmp.width = fw; tmp.height = fh;
+                const tctx = tmp.getContext('2d');
+                tctx.imageSmoothingEnabled = false;
+
+                const tmpSrc = document.createElement('canvas');
+                tmpSrc.width = cropped.width; tmpSrc.height = cropped.height;
+                tmpSrc.getContext('2d').putImageData(new ImageData(cropped.data, cropped.width, cropped.height), 0, 0);
+
+                tctx.drawImage(tmpSrc, 0, 0, fw, fh);
+                const src = tctx.getImageData(0, 0, fw, fh).data;
+
+                for (let y = 0; y < fh; y++) {
+                    for (let x = 0; x < fw; x++) {
+                        const srcIdx = (y * fw + x) * 4;
+                        const dstIdx = srcIdx;
+                        const [pr, pg, pb] = processPixel(src[srcIdx], src[srcIdx + 1], src[srcIdx + 2], src[srcIdx + 3], x, y, params);
+                        frameData[dstIdx] = pr; frameData[dstIdx + 1] = pg; frameData[dstIdx + 2] = pb; frameData[dstIdx + 3] = 255;
+                        if (pr > 0 || pg > 0 || pb > 0) hasVisible = true;
+                    }
+                }
+                const fr = { data: frameData, width: fw, height: fh, origIdx: idx, isEmpty: !hasVisible };
+                state.allFrames.push(fr);
+                if (!autoSkip || !fr.isEmpty) {
+                    state.frames.push(fr);
+                } else {
+                    state.removedIndices.add(idx);
+                }
+            });
+
+            if (state.seqImages.length) {
+                const oCtx = $('origCanvas').getContext('2d');
+                $('origCanvas').width = state.seqImages[0].width; $('origCanvas').height = state.seqImages[0].height;
+                oCtx.drawImage(state.seqImages[0].img, 0, 0);
+            }
+
+            $('sheetGrid').innerHTML = '';
+            rebuildThumbs();
+            state.currentFrame = 0;
+            renderFrame(0);
+            updateInfo();
+            updateAnimPreviewSize();
+            updateCropOverlay();
+        }
+
+        /* ===================== 精灵表处理 ===================== */
+        function processSheet() {
+            if (!state.img) return;
+            const cols = +inputs.sheetCols.value;
+            const rows = +inputs.sheetRows.value;
+            const fw = Math.floor(state.width / cols);
+            const fh = Math.floor(state.height / rows);
+            const params = getParams();
+            const autoSkip = inputs.autoSkipEmpty.checked;
+            const mode = inputs.extractMode.value;
+            const crop = getFrameCropRect(fw, fh);
+            const outW = crop ? crop.w : fw;
+            const outH = crop ? crop.h : fh;
+
+            const rawFrames = [];
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    // 先提取该帧原始数据
+                    const rawFrame = new Uint8ClampedArray(fw * fh * 4);
+                    for (let y = 0; y < fh; y++) {
+                        for (let x = 0; x < fw; x++) {
+                            const srcIdx = ((r * fh + y) * state.width + (c * fw + x)) * 4;
+                            const dstIdx = (y * fw + x) * 4;
+                            rawFrame[dstIdx] = state.origData[srcIdx];
+                            rawFrame[dstIdx + 1] = state.origData[srcIdx + 1];
+                            rawFrame[dstIdx + 2] = state.origData[srcIdx + 2];
+                            rawFrame[dstIdx + 3] = state.origData[srcIdx + 3];
+                        }
+                    }
+                    // 再裁切该帧
+                    const cropped = cropData(rawFrame, fw, fh, crop);
+                    const frameData = new Uint8ClampedArray(outW * outH * 4);
+                    let hasVisible = false;
+                    for (let y = 0; y < outH; y++) {
+                        for (let x = 0; x < outW; x++) {
+                            const srcIdx = (y * outW + x) * 4;
+                            const [pr, pg, pb] = processPixel(cropped.data[srcIdx], cropped.data[srcIdx + 1], cropped.data[srcIdx + 2], cropped.data[srcIdx + 3], x, y, params);
+                            const dstIdx = srcIdx;
+                            frameData[dstIdx] = pr; frameData[dstIdx + 1] = pg; frameData[dstIdx + 2] = pb; frameData[dstIdx + 3] = 255;
+                            if (pr > 0 || pg > 0 || pb > 0) hasVisible = true;
+                        }
+                    }
+                    rawFrames.push({ r, c, data: frameData, width: outW, height: outH, origIdx: r * cols + c, isEmpty: !hasVisible });
+                }
+            }
+
+            let ordered = [];
+            if (mode === 'all-row') ordered = [...rawFrames];
+            else if (mode === 'all-col') for (let c = 0; c < cols; c++) for (let r = 0; r < rows; r++) ordered.push(rawFrames[r * cols + c]);
+            else if (mode === 'single-col') { const tc = Math.min(Math.max(+inputs.extractIndex.value, 0), cols - 1); for (let r = 0; r < rows; r++) ordered.push(rawFrames[r * cols + tc]); }
+            else if (mode === 'single-row') { const tr = Math.min(Math.max(+inputs.extractIndex.value, 0), rows - 1); for (let c = 0; c < cols; c++) ordered.push(rawFrames[tr * cols + c]); }
+            else if (mode === 'range') { const s = +inputs.rangeStart.value, e = +inputs.rangeEnd.value; for (let i = 0; i < rawFrames.length; i++) if (i >= s && i <= e) ordered.push(rawFrames[i]); }
+
+            state.allFrames = ordered.map(fr => ({ ...fr }));
+            state.frames = []; state.removedIndices.clear();
+            ordered.forEach((fr, idx) => {
+                const newFr = { data: fr.data, width: fr.width, height: fr.height, origIdx: fr.origIdx, isEmpty: fr.isEmpty };
+                if (!autoSkip || !fr.isEmpty) state.frames.push(newFr); else state.removedIndices.add(fr.origIdx);
+            });
+
+            const grid = $('sheetGrid'); grid.innerHTML = '';
+            const oScale = Math.max(1, Math.min(8, Math.floor(320 / Math.max(state.width, state.height))));
+            for (let i = 1; i < cols; i++) { const line = document.createElement('div'); line.className = 'sheet-grid-line-v'; line.style.left = (i * fw * oScale) + 'px'; grid.appendChild(line); }
+            for (let i = 1; i < rows; i++) { const line = document.createElement('div'); line.className = 'sheet-grid-line-h'; line.style.top = (i * fh * oScale) + 'px'; grid.appendChild(line); }
+            for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) { const idx = r * cols + c; const lbl = document.createElement('div'); lbl.className = 'sheet-cell-label' + (state.removedIndices.has(idx) ? ' skip' : ''); lbl.textContent = idx + (state.removedIndices.has(idx) ? '×' : ''); lbl.style.left = (c * fw * oScale + 2) + 'px'; lbl.style.top = (r * fh * oScale + 2) + 'px'; grid.appendChild(lbl); }
+            const info = document.createElement('div'); info.className = 'sheet-cell-label'; info.style.background = 'var(--ok)'; info.style.color = '#000'; info.style.left = '2px'; info.style.top = (rows * fh * oScale - 18) + 'px'; info.textContent = `${state.frames.length}f`; grid.appendChild(info);
+
+            rebuildThumbs(); state.currentFrame = 0; renderFrame(0); updateInfo(); updateAnimPreviewSize(); updateCropOverlay();
+        }
+
+        /* ===================== 帧管理 ===================== */
+        function rebuildThumbs() {
+            const thumbs = $('frameThumbs'); thumbs.innerHTML = '';
+            state.frames.forEach((fr, idx) => {
+                const wrap = document.createElement('div'); wrap.className = 'thumb-wrap';
+                const cvs = document.createElement('canvas');
+                cvs.width = fr.width; cvs.height = fr.height;
+                cvs.className = 'thumb' + (fr.isEmpty ? ' empty' : '');
+                cvs.getContext('2d').putImageData(new ImageData(fr.data, fr.width, fr.height), 0, 0);
+                cvs.addEventListener('click', () => { state.currentFrame = idx; renderFrame(idx); highlightThumb(idx); });
+                const del = document.createElement('button'); del.className = 'thumb-btn del'; del.textContent = '×'; del.title = '删除';
+                del.addEventListener('click', (e) => { e.stopPropagation(); removeFrameByListIndex(idx); });
+                const up = document.createElement('button'); up.className = 'thumb-btn'; up.textContent = '↑'; up.title = '上移';
+                up.addEventListener('click', (e) => { e.stopPropagation(); moveFrame(idx, -1); });
+                const down = document.createElement('button'); down.className = 'thumb-btn'; down.textContent = '↓'; down.title = '下移';
+                down.addEventListener('click', (e) => { e.stopPropagation(); moveFrame(idx, 1); });
+                const lbl = document.createElement('div'); lbl.className = 'thumb-label'; lbl.textContent = `#${fr.origIdx}`;
+                const ops = document.createElement('div'); ops.className = 'thumb-ops';
+                ops.appendChild(up); ops.appendChild(del); ops.appendChild(down);
+                wrap.appendChild(cvs); wrap.appendChild(ops); wrap.appendChild(lbl);
+                thumbs.appendChild(wrap);
+            });
+        }
+        function highlightThumb(idx) { document.querySelectorAll('.thumb').forEach((t, i) => t.classList.toggle('active', i === idx)); }
+        function removeFrameByListIndex(listIdx) {
+            if (state.frames.length <= 1) { toast('至少保留一帧'); return; }
+            const fr = state.frames[listIdx];
+            state.removedIndices.add(fr.origIdx);
+            state.frames.splice(listIdx, 1);
+            if (state.currentFrame >= state.frames.length) state.currentFrame = 0;
+            rebuildThumbs(); renderFrame(state.currentFrame); updateInfo();
+            toast(`已删除帧 #${fr.origIdx}，剩余 ${state.frames.length} 帧`);
+        }
+        function moveFrame(listIdx, dir) {
+            const newIdx = listIdx + dir;
+            if (newIdx < 0 || newIdx >= state.frames.length) return;
+            [state.frames[listIdx], state.frames[newIdx]] = [state.frames[newIdx], state.frames[listIdx]];
+            rebuildThumbs();
+            state.currentFrame = newIdx;
+            renderFrame(newIdx);
+        }
+        function removeEmptyFrames() {
+            if (!state.allFrames.length) return;
+            const before = state.frames.length;
+            state.frames = state.frames.filter(fr => !fr.isEmpty);
+            state.frames.forEach(fr => state.removedIndices.delete(fr.origIdx));
+            state.allFrames.forEach(fr => { if (fr.isEmpty) state.removedIndices.add(fr.origIdx); });
+            if (state.frames.length === 0) { toast('没有非空帧，已保留全部'); state.frames = [...state.allFrames]; state.removedIndices.clear(); }
+            if (state.currentFrame >= state.frames.length) state.currentFrame = 0;
+            rebuildThumbs(); renderFrame(state.currentFrame); updateInfo();
+            const removed = before - state.frames.length;
+            if (removed > 0) toast(`已删除 ${removed} 个空白帧，剩余 ${state.frames.length} 帧`); else toast('没有空白帧可删除');
+        }
+        function restoreAllFrames() {
+            if (!state.allFrames.length) return;
+            state.frames = state.allFrames.map(fr => ({ data: fr.data, width: fr.width, height: fr.height, origIdx: fr.origIdx, isEmpty: fr.isEmpty }));
+            state.removedIndices.clear(); state.currentFrame = 0;
+            rebuildThumbs(); renderFrame(0); updateInfo();
+            toast(`已恢复全部 ${state.frames.length} 帧`);
+        }
+
+
+        /* ===================== 裁切 (Crop) ===================== */
+        function getCropRect(srcW, srcH) {
+            if (!inputs.enableCrop.checked) return null;
+            let x = Math.max(0, Math.min(+inputs.cropX.value, srcW - 1));
+            let y = Math.max(0, Math.min(+inputs.cropY.value, srcH - 1));
+            let w = Math.max(1, Math.min(+inputs.cropW.value, srcW - x));
+            let h = Math.max(1, Math.min(+inputs.cropH.value, srcH - y));
+            return { x, y, w, h };
+        }
+        function getFrameCropRect(frameW, frameH) {
+            if (!inputs.enableCrop.checked) return null;
+            let x = Math.max(0, Math.min(+inputs.cropX.value, frameW - 1));
+            let y = Math.max(0, Math.min(+inputs.cropY.value, frameH - 1));
+            let w = Math.max(1, Math.min(+inputs.cropW.value, frameW - x));
+            let h = Math.max(1, Math.min(+inputs.cropH.value, frameH - y));
+            return { x, y, w, h };
+        }
+        function cropData(data, srcW, srcH, rect) {
+            if (!rect) return { data, width: srcW, height: srcH };
+            const { x, y, w, h } = rect;
+            const out = new Uint8ClampedArray(w * h * 4);
+            for (let row = 0; row < h; row++) {
+                for (let col = 0; col < w; col++) {
+                    const srcIdx = ((y + row) * srcW + (x + col)) * 4;
+                    const dstIdx = (row * w + col) * 4;
+                    out[dstIdx] = data[srcIdx];
+                    out[dstIdx + 1] = data[srcIdx + 1];
+                    out[dstIdx + 2] = data[srcIdx + 2];
+                    out[dstIdx + 3] = data[srcIdx + 3];
+                }
+            }
+            return { data: out, width: w, height: h };
+        }
+        function updateCropOverlay() {
+            const overlay = $('cropOverlay');
+            const imgMode = inputs.imgMode.value;
+            // 只有单张模式在原始图上显示裁切框；精灵表/序列模式是逐帧裁切，由procCanvas直接呈现结果
+            if (imgMode !== 'single' || !state.img) { overlay.style.display = 'none'; return; }
+            const srcW = state.width; const srcH = state.height;
+            const rect = getCropRect(srcW, srcH);
+            if (!rect) { overlay.style.display = 'none'; return; }
+            const oScale = Math.max(1, Math.min(8, Math.floor(320 / Math.max(srcW, srcH))));
+            overlay.style.display = 'block';
+            overlay.style.left = (rect.x * oScale) + 'px';
+            overlay.style.top = (rect.y * oScale) + 'px';
+            overlay.style.width = (rect.w * oScale) + 'px';
+            overlay.style.height = (rect.h * oScale) + 'px';
+        }
+        function resetCrop() {
+            inputs.cropX.value = 0; inputs.cropY.value = 0; inputs.cropW.value = 16; inputs.cropH.value = 16;
+            updateCropOverlay();
+            if (inputs.imgMode.value === 'sheet' && state.img) processSheet();
+            if (inputs.imgMode.value === 'sequence' && state.seqImages.length) processSequence();
+            if (inputs.imgMode.value === 'single' && state.img) render();
+        }
+        function updateInfo() {
+            const imgMode = inputs.imgMode.value;
+            let sizeText = '-', frameText = '-', byteText = '-';
+            if (imgMode === 'single' && state.img) {
+                const rect = getCropRect(state.width, state.height);
+                sizeText = rect ? `${state.width}×${state.height} → ${rect.w}×${rect.h}` : `${state.width}×${state.height}`;
+                const w = rect ? rect.w : state.width; const h = rect ? rect.h : state.height;
+                const mode = inputs.exportMode.value;
+                if (mode === 'sprite') byteText = `${w * h * 3} bytes`;
+                else if (mode === 'frame') byteText = `${MATRIX_W * MATRIX_H * 3} bytes`;
+            } else if (imgMode === 'sheet' && state.img) {
+                const cols = +inputs.sheetCols.value; const rows = +inputs.sheetRows.value;
+                const fw = Math.floor(state.width / cols); const fh = Math.floor(state.height / rows);
+                const crop = getFrameCropRect(fw, fh);
+                const outW = crop ? crop.w : fw; const outH = crop ? crop.h : fh;
+                sizeText = `${state.width}×${state.height} (${cols}×${rows}格)`;
+                frameText = `${state.frames.length}f / ${outW}×${outH}`;
+                const mode = inputs.exportMode.value;
+                if (mode === 'anim') byteText = `${state.frames.length * fw * fh * 3} bytes`;
+                else if (mode === 'sprite') byteText = `${fw * fh * 3} bytes`;
+                else byteText = `${MATRIX_W * MATRIX_H * 3} bytes`;
+            } else if (imgMode === 'sequence' && state.seqImages.length) {
+                const first = state.seqImages[0];
+                const crop = getFrameCropRect(first.width, first.height);
+                const fw = crop ? crop.w : first.width; const fh = crop ? crop.h : first.height;
+                sizeText = `${state.seqImages.length} imgs`;
+                frameText = `${state.frames.length}f / ${fw}×${fh}`;
+                const mode = inputs.exportMode.value;
+                if (mode === 'anim') byteText = `${state.frames.length * fw * fh * 3} bytes`;
+                else if (mode === 'sprite') byteText = `${fw * fh * 3} bytes`;
+                else byteText = `${MATRIX_W * MATRIX_H * 3} bytes`;
+            }
+            $('infoSize').textContent = sizeText;
+            $('infoFrames').textContent = frameText;
+            $('infoBytes').textContent = byteText;
+            $('infoMode').textContent = inputs.exportMode.options[inputs.exportMode.selectedIndex].text;
+        }
         /* ===================== 颜色算法 ===================== */
         function clamp(v) { return Math.max(0, Math.min(255, Math.round(v))); }
-
-        function rgbToHsl(r, g, b) {
-            r /= 255; g /= 255; b /= 255;
-            const max = Math.max(r, g, b), min = Math.min(r, g, b);
-            let h, s, l = (max + min) / 2;
-            if (max === min) { h = s = 0; }
-            else {
-                const d = max - min;
-                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-                switch (max) {
-                    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-                    case g: h = (b - r) / d + 2; break;
-                    case b: h = (r - g) / d + 4; break;
-                }
-                h /= 6;
-            }
-            return [h, s, l];
-        }
-        function hslToRgb(h, s, l) {
-            let r, g, b;
-            if (s === 0) { r = g = b = l; }
-            else {
-                const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-                const p = 2 * l - q;
-                const f = (t) => {
-                    if (t < 0) t += 1; if (t > 1) t -= 1;
-                    if (t < 1 / 6) return p + (q - p) * 6 * t;
-                    if (t < 1 / 2) return q;
-                    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
-                    return p;
-                };
-                r = f(h + 1 / 3); g = f(h); b = f(h - 1 / 3);
-            }
-            return [r * 255, g * 255, b * 255];
-        }
-
-        function hexToRgb(hex) {
-            const n = hex.replace('#', '');
-            return { r: parseInt(n.substr(0, 2), 16), g: parseInt(n.substr(2, 2), 16), b: parseInt(n.substr(4, 2), 16) };
-        }
-
-        // 2x2 Bayer 矩阵
+        function rgbToHsl(r, g, b) { r /= 255; g /= 255; b /= 255; const max = Math.max(r, g, b), min = Math.min(r, g, b); let h, s, l = (max + min) / 2; if (max === min) { h = s = 0; } else { const d = max - min; s = l > 0.5 ? d / (2 - max - min) : d / (max + min); switch (max) { case r: h = (g - b) / d + (g < b ? 6 : 0); break; case g: h = (b - r) / d + 2; break; case b: h = (r - g) / d + 4; break; } h /= 6; } return [h, s, l]; }
+        function hslToRgb(h, s, l) { let r, g, b; if (s === 0) { r = g = b = l; } else { const q = l < 0.5 ? l * (1 + s) : l + s - l * s; const p = 2 * l - q; const f = (t) => { if (t < 0) t += 1; if (t > 1) t -= 1; if (t < 1 / 6) return p + (q - p) * 6 * t; if (t < 1 / 2) return q; if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6; return p; }; r = f(h + 1 / 3); g = f(h); b = f(h - 1 / 3); } return [r * 255, g * 255, b * 255]; }
+        function hexToRgb(hex) { const n = hex.replace('#', ''); return { r: parseInt(n.substr(0, 2), 16), g: parseInt(n.substr(2, 2), 16), b: parseInt(n.substr(4, 2), 16) }; }
         const BAYER = [[0, 2], [3, 1]];
-
         function processPixel(r, g, b, a, x, y, params) {
-            const bg = hexToRgb(params.bgColor);
-            // Alpha
-            if (a < params.alpha) { r = bg.r; g = bg.g; b = bg.b; }
-
-            // Brightness
+            const bg = hexToRgb(params.bgColor); if (a < params.alpha) { r = bg.r; g = bg.g; b = bg.b; }
             r += params.brightness; g += params.brightness; b += params.brightness;
-
-            // Contrast
             const factor = (259 * (params.contrast + 255)) / (255 * (259 - params.contrast));
-            r = factor * (r - 128) + 128;
-            g = factor * (g - 128) + 128;
-            b = factor * (b - 128) + 128;
-
-            // Saturation & Hue
-            if (params.saturation !== 100 || params.hue !== 0) {
-                let [h, s, l] = rgbToHsl(r, g, b);
-                s *= (params.saturation / 100);
-                h += (params.hue / 360);
-                if (h > 1) h -= 1; if (h < 0) h += 1;
-                [r, g, b] = hslToRgb(h, s, l);
-            }
-
-            // Gamma
-            if (params.gamma !== 1.0) {
-                r = 255 * Math.pow(Math.max(0, r) / 255, params.gamma);
-                g = 255 * Math.pow(Math.max(0, g) / 255, params.gamma);
-                b = 255 * Math.pow(Math.max(0, b) / 255, params.gamma);
-            }
-
-            // Depth / Quantize
-            if (params.depth < 8) {
-                const levels = 1 << params.depth; // 2,4,8...
-                const step = 255 / (levels - 1);
-                // dithering adds noise before quantize
-                if (params.dither) {
-                    const threshold = (BAYER[y % 2][x % 2] + 0.5) / 4.0 - 0.5; // -0.375 ~ 0.375
-                    const noise = threshold * step;
-                    r += noise; g += noise; b += noise;
-                }
-                r = Math.round(Math.round(Math.max(0, r) / step) * step);
-                g = Math.round(Math.round(Math.max(0, g) / step) * step);
-                b = Math.round(Math.round(Math.max(0, b) / step) * step);
-            } else if (params.dither) {
-                // even at 8bit, dithering helps if we later reduce? no, skip for full depth
-            }
-
+            r = factor * (r - 128) + 128; g = factor * (g - 128) + 128; b = factor * (b - 128) + 128;
+            if (params.saturation !== 100 || params.hue !== 0) { let [h, s, l] = rgbToHsl(r, g, b); s *= (params.saturation / 100); h += (params.hue / 360); if (h > 1) h -= 1; if (h < 0) h += 1;[r, g, b] = hslToRgb(h, s, l); }
+            if (params.gamma !== 1.0) { r = 255 * Math.pow(Math.max(0, r) / 255, params.gamma); g = 255 * Math.pow(Math.max(0, g) / 255, params.gamma); b = 255 * Math.pow(Math.max(0, b) / 255, params.gamma); }
+            if (params.depth < 8) { const levels = 1 << params.depth; const step = 255 / (levels - 1); if (params.dither) { const threshold = (BAYER[y % 2][x % 2] + 0.5) / 4.0 - 0.5; const noise = threshold * step; r += noise; g += noise; b += noise; } r = Math.round(Math.round(Math.max(0, r) / step) * step); g = Math.round(Math.round(Math.max(0, g) / step) * step); b = Math.round(Math.round(Math.max(0, b) / step) * step); }
             return [clamp(r), clamp(g), clamp(b)];
+        }
+        function getParams() {
+            return { brightness: +inputs.brightness.value, contrast: +inputs.contrast.value, saturation: +inputs.saturation.value, hue: +inputs.hue.value, gamma: +inputs.gamma.value / 100, depth: +inputs.depth.value, alpha: +inputs.alpha.value, bgColor: inputs.bgColor.value, dither: inputs.dither.checked, scale: +inputs.scale.value, showGrid: inputs.showGrid.checked };
         }
 
         /* ===================== 渲染 ===================== */
-        function getParams() {
-            return {
-                brightness: +inputs.brightness.value,
-                contrast: +inputs.contrast.value,
-                saturation: +inputs.saturation.value,
-                hue: +inputs.hue.value,
-                gamma: +inputs.gamma.value / 100,
-                depth: +inputs.depth.value,
-                alpha: +inputs.alpha.value,
-                bgColor: inputs.bgColor.value,
-                dither: inputs.dither.checked,
-                scale: +inputs.scale.value,
-                showGrid: inputs.showGrid.checked,
-            };
+        function render() {
+            if (!state.img && !state.seqImages.length) return;
+            if (inputs.imgMode.value === 'sheet' || inputs.imgMode.value === 'sequence') {
+                if (state.frames.length > 0) renderFrame(state.currentFrame);
+            } else {
+                const rect = getCropRect(state.width, state.height);
+                const cropped = cropData(state.origData, state.width, state.height, rect);
+                const { width, height, data: sourceData } = cropped;
+                const params = getParams();
+                const outData = new Uint8ClampedArray(width * height * 4);
+                for (let i = 0; i < width * height; i++) { const idx = i * 4; const x = i % width, y = Math.floor(i / width); const [pr, pg, pb] = processPixel(sourceData[idx], sourceData[idx + 1], sourceData[idx + 2], sourceData[idx + 3], x, y, params); outData[idx] = pr; outData[idx + 1] = pg; outData[idx + 2] = pb; outData[idx + 3] = 255; }
+                const pc = $('procCanvas'); pc.width = width; pc.height = height; pc.getContext('2d').putImageData(new ImageData(outData, width, height), 0, 0);
+                const scale = params.scale; pc.style.width = (width * scale) + 'px'; pc.style.height = (height * scale) + 'px';
+                const gl = $('gridLayer'); gl.style.display = params.showGrid ? 'block' : 'none'; gl.style.setProperty('--gs', scale + 'px');
+                const oc = $('origCanvas'); const oScale = Math.max(1, Math.min(8, Math.floor(320 / Math.max(state.width, state.height)))); oc.style.width = (state.width * oScale) + 'px'; oc.style.height = (state.height * oScale) + 'px';
+                updateCropOverlay();
+                updateInfo();
+            }
+        }
+        function renderFrame(frameIdx) {
+            if (!state.frames[frameIdx]) return;
+            const fr = state.frames[frameIdx]; const params = getParams();
+            const pc = $('procCanvas'); pc.width = fr.width; pc.height = fr.height;
+            pc.getContext('2d').putImageData(new ImageData(fr.data, fr.width, fr.height), 0, 0);
+            const scale = params.scale;
+            pc.style.width = (fr.width * scale) + 'px'; pc.style.height = (fr.height * scale) + 'px';
+            const gl = $('gridLayer'); gl.style.display = params.showGrid ? 'block' : 'none'; gl.style.setProperty('--gs', scale + 'px');
+            highlightThumb(frameIdx);
         }
 
-        function render() {
-            if (!state.img) return;
-            const { width, height, origData } = state;
-            const params = getParams();
+        /* ===================== 动画预览 ===================== */
+        function updateAnimPreviewSize() {
+            if (!state.frames.length) return;
+            const scale = +inputs.scale.value;
+            const fr = state.frames[0];
+            const cvs = $('animCanvas');
+            cvs.style.width = (fr.width * scale) + 'px';
+            cvs.style.height = (fr.height * scale) + 'px';
+        }
+        function startAnimPreview() {
+            stopAnimPreview();
+            if (state.frames.length === 0) return;
+            const cvs = $('animCanvas');
+            const host = $('hostAnim');
+            host.style.display = 'block';
+            updateAnimPreviewSize();
 
-            // 1) 生成处理后 ImageData
-            const outData = new Uint8ClampedArray(width * height * 4);
-            for (let i = 0; i < width * height; i++) {
-                const idx = i * 4;
-                const x = i % width, y = Math.floor(i / width);
-                const [pr, pg, pb] = processPixel(origData[idx], origData[idx + 1], origData[idx + 2], origData[idx + 3], x, y, params);
-                outData[idx] = pr; outData[idx + 1] = pg; outData[idx + 2] = pb; outData[idx + 3] = 255;
+            function tick() {
+                const fr = state.frames[state.currentFrame];
+                if (!fr) { state.animTimer = setTimeout(tick, 200); return; }
+                cvs.width = fr.width; cvs.height = fr.height;
+                cvs.getContext('2d').putImageData(new ImageData(fr.data, fr.width, fr.height), 0, 0);
+                updateAnimPreviewSize();
+                state.currentFrame = (state.currentFrame + 1) % state.frames.length;
+                highlightThumb(state.currentFrame);
+                const interval = inputs.imgMode.value === 'sequence' ? +inputs.seqSpeed.value : +inputs.animSpeed.value;
+                state.animTimer = setTimeout(tick, interval);
             }
-
-            // 2) 绘制到预览 canvas
-            const pc = $('procCanvas');
-            pc.width = width; pc.height = height;
-            const ctx = pc.getContext('2d');
-            ctx.putImageData(new ImageData(outData, width, height), 0, 0);
-
-            // 3) CSS 缩放
-            const scale = params.scale;
-            pc.style.width = (width * scale) + 'px';
-            pc.style.height = (height * scale) + 'px';
-
-            // 4) 网格层
-            const gl = $('gridLayer');
-            gl.style.display = params.showGrid ? 'block' : 'none';
-            gl.style.setProperty('--gs', scale + 'px');
-
-            // 原始预览也统一一下尺寸显示（小预览）
-            const oc = $('origCanvas');
-            const oScale = Math.max(1, Math.min(8, Math.floor(320 / width)));
-            oc.style.width = (width * oScale) + 'px';
-            oc.style.height = (height * oScale) + 'px';
+            tick();
+        }
+        function stopAnimPreview() {
+            if (state.animTimer) { clearTimeout(state.animTimer); state.animTimer = null; }
+            state.currentFrame = 0;
         }
 
         /* ===================== 预设 ===================== */
         function applyPreset(name) {
-            const p = {
-                reset: { brightness: 0, contrast: 0, saturation: 100, hue: 0, gamma: 100, depth: 8, alpha: 128, dither: false, bgColor: '#000000' },
-                mono: { brightness: 0, contrast: 30, saturation: 0, hue: 0, gamma: 100, depth: 8, alpha: 128, dither: false, bgColor: '#000000' },
-                gameboy: { brightness: 10, contrast: 20, saturation: 0, hue: 0, gamma: 90, depth: 2, alpha: 128, dither: true, bgColor: '#8bac0f' },
-                vivid: { brightness: 0, contrast: 15, saturation: 150, hue: 0, gamma: 110, depth: 8, alpha: 128, dither: false, bgColor: '#000000' },
-            }[name];
+            const p = { reset: { brightness: 0, contrast: 0, saturation: 100, hue: 0, gamma: 100, depth: 8, alpha: 128, dither: false, bgColor: '#000000' }, mono: { brightness: 0, contrast: 30, saturation: 0, hue: 0, gamma: 100, depth: 8, alpha: 128, dither: false, bgColor: '#000000' }, gameboy: { brightness: 10, contrast: 20, saturation: 0, hue: 0, gamma: 90, depth: 2, alpha: 128, dither: true, bgColor: '#8bac0f' }, vivid: { brightness: 0, contrast: 15, saturation: 150, hue: 0, gamma: 110, depth: 8, alpha: 128, dither: false, bgColor: '#000000' } }[name];
             if (!p) return;
-            inputs.brightness.value = p.brightness; inputs.contrast.value = p.contrast;
-            inputs.saturation.value = p.saturation; inputs.hue.value = p.hue;
-            inputs.gamma.value = p.gamma; inputs.depth.value = p.depth;
-            inputs.alpha.value = p.alpha; inputs.dither.checked = p.dither;
-            inputs.bgColor.value = p.bgColor;
-            // 更新标签
-            Object.keys(labels).forEach(k => {
-                const el = inputs[k]; if (!el) return;
-                let v = el.value; if (k === 'hue') v += '°'; if (k === 'gamma') v = (v / 100).toFixed(2); if (k === 'scale') v += '×';
-                labels[k].textContent = v;
-            });
+            inputs.brightness.value = p.brightness; inputs.contrast.value = p.contrast; inputs.saturation.value = p.saturation; inputs.hue.value = p.hue; inputs.gamma.value = p.gamma; inputs.depth.value = p.depth; inputs.alpha.value = p.alpha; inputs.dither.checked = p.dither; inputs.bgColor.value = p.bgColor;
+            Object.keys(labels).forEach(k => { const el = inputs[k]; if (!el) return; let v = el.value; if (k === 'hue') v += '°'; if (k === 'gamma') v = (v / 100).toFixed(2); if (k === 'scale') v += '×'; if (k === 'animSpeed' || k === 'seqSpeed') v += ' ms'; labels[k].textContent = v; });
+            const mode = inputs.imgMode.value;
+            if (mode === 'sheet' && state.img) processSheet();
+            if (mode === 'sequence' && state.seqImages.length) processSequence();
             render();
             toast('已应用预设：' + name);
         }
 
         /* ===================== 导出 ===================== */
         function doExport(fmt) {
-            if (!state.img) { toast('请先上传图片'); return; }
-            const { width, height } = state;
-            const params = getParams();
-            const mode = inputs.exportMode.value;
-            const prefix = inputs.fileName.value || 'sprite';
-
-            // 重新生成处理数据（确保与预览一致）
-            const outData = new Uint8ClampedArray(width * height * 4);
-            for (let i = 0; i < width * height; i++) {
-                const idx = i * 4;
-                const x = i % width, y = Math.floor(i / width);
-                const [pr, pg, pb] = processPixel(state.origData[idx], state.origData[idx + 1], state.origData[idx + 2], state.origData[idx + 3], x, y, params);
-                outData[idx] = pr; outData[idx + 1] = pg; outData[idx + 2] = pb; outData[idx + 3] = 255;
-            }
-
-            let buf, filename, content = '';
+            if (!state.img && !state.seqImages.length) { toast('请先上传图片'); return; }
+            const params = getParams(); const mode = inputs.exportMode.value; const prefix = inputs.fileName.value || 'sprite'; const imgMode = inputs.imgMode.value;
+            if ((imgMode === 'sheet' || imgMode === 'sequence') && mode === 'anim') { exportAnimation(fmt, prefix, params); return; }
+            let buf, filename;
+            const frames = (imgMode === 'sheet' || imgMode === 'sequence') ? state.frames : [{
+                data: (() => { const { width, height, origData } = state; const out = new Uint8ClampedArray(width * height * 4); for (let i = 0; i < width * height; i++) { const idx = i * 4; const x = i % width, y = Math.floor(i / width); const [pr, pg, pb] = processPixel(origData[idx], origData[idx + 1], origData[idx + 2], origData[idx + 3], x, y, params); out[idx] = pr; out[idx + 1] = pg; out[idx + 2] = pb; out[idx + 3] = 255; } return out; })(),
+                width: state.width, height: state.height
+            }];
+            const fr = frames[0]; const fw = fr.width, fh = fr.height;
             if (mode === 'sprite') {
-                // 原始尺寸 RGB
-                buf = new Uint8Array(width * height * 3);
-                let ptr = 0;
-                for (let i = 0; i < width * height; i++) {
-                    const idx = i * 4;
-                    buf[ptr++] = outData[idx];
-                    buf[ptr++] = outData[idx + 1];
-                    buf[ptr++] = outData[idx + 2];
-                }
-                filename = `${prefix}_${width}x${height}.${fmt === 'bin' ? 'bin' : 'h'}`;
+                buf = new Uint8Array(fw * fh * 3); let ptr = 0;
+                for (let i = 0; i < fw * fh; i++) { const idx = i * 4; buf[ptr++] = fr.data[idx]; buf[ptr++] = fr.data[idx + 1]; buf[ptr++] = fr.data[idx + 2]; }
+                filename = `${prefix}_${fw}x${fh}.${fmt === 'bin' ? 'bin' : 'h'}`;
             } else {
-                // Frame 36x16
-                buf = new Uint8Array(MATRIX_W * MATRIX_H * 3);
-                const bg = hexToRgb(params.bgColor);
-                for (let i = 0; i < buf.length; i += 3) { buf[i] = bg.r; buf[i + 1] = bg.g; buf[i + 2] = bg.b; }
+                buf = new Uint8Array(MATRIX_W * MATRIX_H * 3); const bg = hexToRgb(params.bgColor); for (let i = 0; i < buf.length; i += 3) { buf[i] = bg.r; buf[i + 1] = bg.g; buf[i + 2] = bg.b; }
                 const offX = +inputs.offX.value, offY = +inputs.offY.value;
-                for (let y = 0; y < height; y++) {
-                    for (let x = 0; x < width; x++) {
-                        const sx = offX + x, sy = offY + y;
-                        if (sx >= 0 && sx < MATRIX_W && sy >= 0 && sy < MATRIX_H) {
-                            const idx = (y * width + x) * 4;
-                            const ledIdx = xyToIndex(sx, sy) * 3;
-                            buf[ledIdx] = outData[idx];
-                            buf[ledIdx + 1] = outData[idx + 1];
-                            buf[ledIdx + 2] = outData[idx + 2];
-                        }
-                    }
-                }
+                for (let y = 0; y < fh; y++) { for (let x = 0; x < fw; x++) { const sx = offX + x, sy = offY + y; if (sx >= 0 && sx < MATRIX_W && sy >= 0 && sy < MATRIX_H) { const idx = (y * fw + x) * 4; const ledIdx = xyToIndex(sx, sy) * 3; buf[ledIdx] = fr.data[idx]; buf[ledIdx + 1] = fr.data[idx + 1]; buf[ledIdx + 2] = fr.data[idx + 2]; } } }
                 filename = `${prefix}_36x16_frame.${fmt === 'bin' ? 'bin' : 'h'}`;
             }
-
-            if (fmt === 'bin') {
-                const blob = new Blob([buf], { type: 'application/octet-stream' });
-                downloadBlob(blob, filename);
-            } else {
-                // C header
-                const arr = Array.from(buf);
-                const varName = prefix.replace(/[^a-zA-Z0-9_]/g, '_');
-                let h = `#ifndef ${varName.toUpperCase()}_H\n#define ${varName.toUpperCase()}_H\n\n`;
-                h += `// ${mode === 'sprite' ? width + 'x' + height + ' Sprite' : '36x16 Frame'}\n`;
-                h += `// Generated by Pixel Mod Tool\n`;
-                h += `const unsigned char ${varName}_${mode}_data[] = {\n`;
-                for (let i = 0; i < arr.length; i++) {
-                    if (i % 12 === 0) h += '  ';
-                    h += `0x${arr[i].toString(16).padStart(2, '0')},`;
-                    if ((i + 1) % 12 === 0) h += '\n'; else h += ' ';
-                }
-                if (arr.length % 12 !== 0) h += '\n';
-                h += `};\n\n#endif\n`;
-                downloadBlob(new Blob([h], { type: 'text/plain' }), filename);
-            }
+            if (fmt === 'bin') { downloadBlob(new Blob([buf], { type: 'application/octet-stream' }), filename); }
+            else { const arr = Array.from(buf); const varName = prefix.replace(/[^a-zA-Z0-9_]/g, '_'); let h = `#ifndef ${varName.toUpperCase()}_H\n#define ${varName.toUpperCase()}_H\n\n`; h += `// ${mode === 'sprite' ? fw + 'x' + fh + ' Sprite' : '36x16 Frame'}\n// Generated by Pixel Mod Tool\n`; h += `const unsigned char ${varName}_${mode}_data[] = {\n`; for (let i = 0; i < arr.length; i++) { if (i % 12 === 0) h += '  '; h += `0x${arr[i].toString(16).padStart(2, '0')},`; if ((i + 1) % 12 === 0) h += '\n'; else h += ' '; } if (arr.length % 12 !== 0) h += '\n'; h += `};\n\n#endif\n`; downloadBlob(new Blob([h], { type: 'text/plain' }), filename); }
             toast(`已导出 ${filename}`);
         }
-
-        function downloadBlob(blob, name) {
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = name; a.click();
-            URL.revokeObjectURL(url);
+        function exportAnimation(fmt, prefix, params) {
+            const n = state.frames.length; if (n === 0) return;
+            const fw = state.frames[0].width, fh = state.frames[0].height;
+            const varName = prefix.replace(/[^a-zA-Z0-9_]/g, '_'); const totalBytes = n * fw * fh * 3;
+            if (fmt === 'bin') {
+                const buf = new Uint8Array(totalBytes); let ptr = 0;
+                for (let f = 0; f < n; f++) { const fr = state.frames[f]; for (let i = 0; i < fw * fh; i++) { const idx = i * 4; buf[ptr++] = fr.data[idx]; buf[ptr++] = fr.data[idx + 1]; buf[ptr++] = fr.data[idx + 2]; } }
+                const filename = `${prefix}_anim_${n}f_${fw}x${fh}.bin`; downloadBlob(new Blob([buf], { type: 'application/octet-stream' }), filename); toast(`已导出 ${filename} (${totalBytes} bytes)`);
+            } else {
+                let h = `#ifndef ${varName.toUpperCase()}_ANIM_H\n#define ${varName.toUpperCase()}_ANIM_H\n\n`; h += `// Animation export\n// Frames: ${n}, Size: ${fw}x${fh}, Total: ${totalBytes} bytes\n\n`; h += `#define ${varName.toUpperCase()}_FRAME_WIDTH  ${fw}\n`; h += `#define ${varName.toUpperCase()}_FRAME_HEIGHT ${fh}\n`; h += `#define ${varName.toUpperCase()}_FRAME_COUNT  ${n}\n\n`; h += `const unsigned char ${varName}_anim_data[${n}][${fw * fh * 3}] = {\n`; for (let f = 0; f < n; f++) { h += `  { // Frame ${f} (orig #${state.frames[f].origIdx})\n`; const fr = state.frames[f]; let line = '    '; for (let i = 0; i < fw * fh; i++) { const idx = i * 4; line += `0x${fr.data[idx].toString(16).padStart(2, '0')},`; line += `0x${fr.data[idx + 1].toString(16).padStart(2, '0')},`; line += `0x${fr.data[idx + 2].toString(16).padStart(2, '0')},`; if ((i + 1) % fw === 0) { h += line + '\n'; line = '    '; } } h += '  },\n'; } h += `};\n\n#endif\n`; const filename = `${prefix}_anim_${n}f_${fw}x${fh}.h`; downloadBlob(new Blob([h], { type: 'text/plain' }), filename); toast(`已导出 ${filename} (${totalBytes} bytes)`);
+            }
         }
-
-        function toast(msg) {
-            const h = $('hint'); h.textContent = msg; h.classList.add('show');
-            setTimeout(() => h.classList.remove('show'), 2000);
-        }
+        function downloadBlob(blob, name) { const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = name; a.click(); URL.revokeObjectURL(url); }
+        function toast(msg) { const h = $('hint'); h.textContent = msg; h.classList.add('show'); setTimeout(() => h.classList.remove('show'), 2000); }
 
         /* ===================== 初始化 ===================== */
         applyPreset('reset');
+        $('boxAnim').style.display = 'none';
+        updateExtractSubOpts();
     </script>
 </body>
 

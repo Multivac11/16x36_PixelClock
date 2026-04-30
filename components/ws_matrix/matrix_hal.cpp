@@ -47,6 +47,37 @@ void MatrixHal::Refresh()
     ESP_ERROR_CHECK(led_strip_refresh(led_strip_));
 }
 
+void MatrixHal::RefreshArea(int x, int y, int w, int h)
+{
+    if (x < 0)
+    {
+        w += x;
+        x = 0;
+    }
+    if (y < 0)
+    {
+        h += y;
+        y = 0;
+    }
+    if (x + w > MATRIX_WIDTH) w = MATRIX_WIDTH - x;
+    if (y + h > MATRIX_HEIGHT) h = MATRIX_HEIGHT - y;
+    if (w <= 0 || h <= 0) return;
+
+    for (int j = y; j < y + h; j++)
+    {
+        for (int i = x; i < x + w; i++)
+        {
+            const uint8_t* p = gfx_.getPixelPtr(i, j);
+            int idx = XYToIndex(i, j);
+            uint8_t r = ScaleBrightness(p[0], brightness_);
+            uint8_t g = ScaleBrightness(p[1], brightness_);
+            uint8_t b = ScaleBrightness(p[2], brightness_);
+            led_strip_set_pixel(led_strip_, idx, r, g, b);
+        }
+    }
+    ESP_ERROR_CHECK(led_strip_refresh(led_strip_));
+}
+
 void MatrixHal::ShowRaw(const uint8_t* rgb_data)
 {
     for (int i = 0; i < LED_STRIP_LED_COUNT; i++)

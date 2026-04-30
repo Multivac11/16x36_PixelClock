@@ -37,6 +37,8 @@ class MatrixHal
     void MatrixHalInit();  // 初始化 RMT + 启动后台任务
     void Refresh();        // 将 Gfx 帧缓冲刷新到 WS2812 硬件
 
+    void RefreshArea(int x, int y, int w, int h);
+
     // 访问 2D 软件引擎，所有绘图通过这里
     GfxDriver& Gfx() { return gfx_; }
 
@@ -52,6 +54,7 @@ class MatrixHal
     MatrixHal() = default;
     ~MatrixHal() = default;
 
+    // 亮度缩放：0~255 -> 0~255
     static inline uint8_t ScaleBrightness(uint8_t val, uint8_t scale) { return (uint16_t)val * scale / 255; }
 
     // 坐标映射：物理 (x,y) -> LED 串联索引
