@@ -3,6 +3,7 @@ set(src_dirs
     key
     i2c_devices
     i2c_devices/sht40
+    i2c_devices/husb238
     i2c_devices/ds3231
     spi_devices
     spi_devices/sdio
@@ -17,6 +18,7 @@ set(include_dirs
     key
     i2c_devices
     i2c_devices/sht40
+    i2c_devices/husb238
     i2c_devices/ds3231
     spi_devices
     spi_devices/sdio

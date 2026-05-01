@@ -3,6 +3,7 @@
 #include "ap_wifi.h"
 #include "audio_capture.h"
 #include "ds3231.h"
+#include "husb238.h"
 #include "i2c.h"
 #include "key.h"
 #include "light_sensor.h"
@@ -22,6 +23,7 @@ extern "C" void app_main(void)
     SpiSdCard::GetInstance().InitSpiSdCard();
     Sht40::GetInstance().InitSht40();
     DS3231::GetInstance().InitDS3231();
+    Husb238::GetInstance().InitHusb238();
     AudioCapture::GetInstance().InitAudioCapture();
     LightSensor::GetInstance().InitLightSensor();
     ApWifi::GetInstance().ApWifiInit();
