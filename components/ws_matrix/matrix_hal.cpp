@@ -19,29 +19,42 @@ void MatrixHal::MatrixHalInit()
     ESP_LOGI(TAG, "Matrix init: %dx%d (%d LEDs), brightness=%d/255", MATRIX_WIDTH, MATRIX_HEIGHT, LED_STRIP_LED_COUNT,
              brightness_);
 
-    // 启动后先全屏暗白色，确认硬件通电
-    gfx_.clear(Color(5, 5, 5));
-    Refresh();
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
-    gfx_.clear(Color(0, 0, 0));
-    Refresh();
+    // 预计算每个 (x,y) 对应的硬件索引
+    for (int y = 0; y < MATRIX_HEIGHT; ++y)
+    {
+        for (int x = 0; x < MATRIX_WIDTH; ++x)
+        {
+            index_map_[y][x] = XYToIndex(x, y);
+        }
+    }
+
+    // 初始化亮度 LUT
+    SetBrightness(brightness_);
+
+    // 启动后缓慢变亮再变暗，确认硬件通电
+    const uint8_t peak = 30;
+    const int steps = 50;
+    const int delay_ms = 5;
+
+    for (int i = 0; i <= steps; ++i)
+    {
+        uint8_t v = (uint8_t)(peak * i / steps);
+        gfx_.clear(Color(v, v, v));
+        Refresh();
+        vTaskDelay(pdMS_TO_TICKS(delay_ms));
+    }
 }
 
 void MatrixHal::Refresh()
 {
-    for (int y = 0; y < MATRIX_HEIGHT; y++)
+    const uint8_t* lut = brightness_lut_;
+    for (int y = 0; y < MATRIX_HEIGHT; ++y)
     {
-        for (int x = 0; x < MATRIX_WIDTH; x++)
+        for (int x = 0; x < MATRIX_WIDTH; ++x)
         {
             const uint8_t* p = gfx_.getPixelPtr(x, y);
-            int idx = XYToIndex(x, y);
-
-            // 应用全局亮度
-            uint8_t r = ScaleBrightness(p[0], brightness_);
-            uint8_t g = ScaleBrightness(p[1], brightness_);
-            uint8_t b = ScaleBrightness(p[2], brightness_);
-
-            led_strip_set_pixel(led_strip_, idx, r, g, b);
+            int idx = index_map_[y][x];
+            led_strip_set_pixel(led_strip_, idx, lut[p[0]], lut[p[1]], lut[p[2]]);
         }
     }
     ESP_ERROR_CHECK(led_strip_refresh(led_strip_));
@@ -63,16 +76,14 @@ void MatrixHal::RefreshArea(int x, int y, int w, int h)
     if (y + h > MATRIX_HEIGHT) h = MATRIX_HEIGHT - y;
     if (w <= 0 || h <= 0) return;
 
-    for (int j = y; j < y + h; j++)
+    const uint8_t* lut = brightness_lut_;
+    for (int j = y; j < y + h; ++j)
     {
-        for (int i = x; i < x + w; i++)
+        for (int i = x; i < x + w; ++i)
         {
             const uint8_t* p = gfx_.getPixelPtr(i, j);
-            int idx = XYToIndex(i, j);
-            uint8_t r = ScaleBrightness(p[0], brightness_);
-            uint8_t g = ScaleBrightness(p[1], brightness_);
-            uint8_t b = ScaleBrightness(p[2], brightness_);
-            led_strip_set_pixel(led_strip_, idx, r, g, b);
+            int idx = index_map_[j][i];
+            led_strip_set_pixel(led_strip_, idx, lut[p[0]], lut[p[1]], lut[p[2]]);
         }
     }
     ESP_ERROR_CHECK(led_strip_refresh(led_strip_));
@@ -80,11 +91,12 @@ void MatrixHal::RefreshArea(int x, int y, int w, int h)
 
 void MatrixHal::ShowRaw(const uint8_t* rgb_data)
 {
-    for (int i = 0; i < LED_STRIP_LED_COUNT; i++)
+    const uint8_t* lut = brightness_lut_;
+    for (int i = 0; i < LED_STRIP_LED_COUNT; ++i)
     {
-        uint8_t r = ScaleBrightness(rgb_data[i * 3 + 0], brightness_);
-        uint8_t g = ScaleBrightness(rgb_data[i * 3 + 1], brightness_);
-        uint8_t b = ScaleBrightness(rgb_data[i * 3 + 2], brightness_);
+        uint8_t r = lut[rgb_data[i * 3 + 0]];
+        uint8_t g = lut[rgb_data[i * 3 + 1]];
+        uint8_t b = lut[rgb_data[i * 3 + 2]];
         led_strip_set_pixel(led_strip_, i, r, g, b);
     }
     ESP_ERROR_CHECK(led_strip_refresh(led_strip_));
@@ -93,5 +105,9 @@ void MatrixHal::ShowRaw(const uint8_t* rgb_data)
 void MatrixHal::SetBrightness(uint8_t brightness)
 {
     brightness_ = brightness;
+    for (int i = 0; i < 256; ++i)
+    {
+        brightness_lut_[i] = (uint16_t)i * brightness / 255;
+    }
     ESP_LOGI(TAG, "Brightness set to %d/255", brightness_);
 }

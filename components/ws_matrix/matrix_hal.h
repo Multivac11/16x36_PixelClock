@@ -34,35 +34,80 @@ class MatrixHal
         return instance;
     }
 
-    void MatrixHalInit();  // 初始化 RMT + 启动后台任务
-    void Refresh();        // 将 Gfx 帧缓冲刷新到 WS2812 硬件
+    /**
+     * @brief 初始化矩阵硬件，包括 RMT、LED 条等
+     */
+    void MatrixHalInit();
 
+    /**
+     * @brief 刷新当前 Gfx 帧缓冲到 WS2812 硬件
+     */
+    void Refresh();
+
+    /**
+     * @brief 刷新指定区域的 Gfx 帧缓冲到 WS2812 硬件
+     * @param x 区域左上角 x 坐标
+     * @param y 区域左上角 y 坐标
+     * @param w 区域宽度
+     * @param h 区域高度
+     */
     void RefreshArea(int x, int y, int w, int h);
 
-    // 访问 2D 软件引擎，所有绘图通过这里
+    /**
+     * @brief 获取 GfxDriver 实例，用于绘图
+     * @return GfxDriver& 引用到 GfxDriver 实例
+     */
     GfxDriver& Gfx() { return gfx_; }
 
+    /**
+     * @brief 获取 GfxDriver 实例，用于绘图（常量引用）
+     * @return const GfxDriver& 引用到 GfxDriver 实例
+     */
     const GfxDriver& Gfx() const { return gfx_; }
 
+    /**
+     * @brief 显示原始 RGB 数据到矩阵
+     * @param rgb_data 指向原始 RGB 数据的指针，每个像素 3 个字节（R、G、B）
+     */
     void ShowRaw(const uint8_t* rgb_data);
 
-    void SetBrightness(uint8_t brightness);  // 0~255，默认255
+    /**
+     * @brief 设置矩阵亮度
+     * @param brightness 亮度值，范围 0~255
+     */
+    void SetBrightness(uint8_t brightness);
 
+    /**
+     * @brief 获取当前矩阵亮度
+     * @return uint8_t 当前亮度值，范围 0~255
+     */
     uint8_t GetBrightness() const { return brightness_; }
 
    private:
     MatrixHal() = default;
     ~MatrixHal() = default;
 
-    // 亮度缩放：0~255 -> 0~255
-    static inline uint8_t ScaleBrightness(uint8_t val, uint8_t scale) { return (uint16_t)val * scale / 255; }
-
-    // 坐标映射：物理 (x,y) -> LED 串联索引
+    /**
+     * @brief 物理坐标 (x,y) 映射到 LED 串联索引
+     * @param x 物理 x 坐标
+     * @param y 物理 y 坐标
+     * @return int LED 串联索引
+     */
     static inline int XYToIndex(int x, int y) { return X_LUT[x] + y * BLOCK_WIDTH; }
 
+   private:
+    // LED 串联索引映射表
+    int index_map_[MATRIX_HEIGHT][MATRIX_WIDTH];
+
+    // 亮度映射表
+    uint8_t brightness_lut_[256];
+
+    // GfxDriver 实例，用于绘图
     GfxDriver gfx_;
 
+    // 当前亮度值
     uint8_t brightness_ = 255;
 
+    // LED 条句柄
     led_strip_handle_t led_strip_ = nullptr;
 };

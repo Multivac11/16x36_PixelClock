@@ -13,7 +13,6 @@
 #include "spi_sdcard.h"
 #include "status_led.h"
 
-// TODO:修改测光adc口为GPIO1
 extern "C" void app_main(void)
 {
     StatusLed::GetInstance().InitStatusLed();

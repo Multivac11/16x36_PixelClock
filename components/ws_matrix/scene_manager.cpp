@@ -13,7 +13,7 @@ void SceneManager::InitSceneManager()
     int id0 = AddAnimation("fire_anim_5f_16x16.bin", 0, 0, 16, 16, 5, 100, 25);
     if (id0 >= 0) ESP_LOGI(TAG, "Anim[0] fire @ slot %d", id0);
 
-    int id1 = AddAnimation("cat_anim_6f_16x16.bin", 17, 0, 16, 16, 6, 80, 25);
+    int id1 = AddAnimation("cat_anim_6f_16x16.bin", 18, 0, 16, 16, 6, 80, 25);
     if (id1 >= 0) ESP_LOGI(TAG, "Anim[1] cat @ slot %d", id1);
 
     MatrixHal::GetInstance().Refresh();

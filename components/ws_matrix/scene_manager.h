@@ -41,16 +41,23 @@ class SceneManager
                      uint8_t brightness = 255);
 
     void SetAnimPosition(int idx, int16_t x, int16_t y);
+
     void RemoveAnimation(int idx);
+
     void PlayAnim(int idx);
+
     void PauseAnim(int idx);
 
     static void TestTask(void* pv);
+
     void TestTaskBody();
 
    private:
     SceneManager() = default;
+
     ~SceneManager() = default;
+
     bool valid(int idx) const;
+
     AnimationSlot slots_[MAX_ANIMATIONS];
 };

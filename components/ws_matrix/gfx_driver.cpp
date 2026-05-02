@@ -1,6 +1,5 @@
 #include "gfx_driver.h"
 
-// ================== 极简 5x7 ASCII 字体 ==================
 static const uint8_t font5x7[][5] = {
     {0x00, 0x00, 0x00, 0x00, 0x00}, {0x00, 0x00, 0x5F, 0x00, 0x00}, {0x00, 0x07, 0x00, 0x07, 0x00},
     {0x14, 0x7F, 0x14, 0x7F, 0x14}, {0x24, 0x2A, 0x7F, 0x2A, 0x12}, {0x23, 0x13, 0x08, 0x64, 0x62},
@@ -36,8 +35,6 @@ static const uint8_t font5x7[][5] = {
     {0x00, 0x41, 0x36, 0x08, 0x00}, {0x08, 0x08, 0x2A, 0x1C, 0x08},
 };
 
-// ================== 实现 ==================
-
 GfxDriver::GfxDriver()
 {
     clear(Colors::BLACK);
@@ -51,13 +48,21 @@ Color GfxDriver::ScaleColor(const Color& c, uint8_t brightness)
 
 void GfxDriver::clear(const Color& c)
 {
-    for (int y = 0; y < HEIGHT; y++)
+    if (c == Colors::BLACK)
     {
-        for (int x = 0; x < WIDTH; x++)
+        memset(fb_, 0, sizeof(fb_));
+    }
+    else
+    {
+        for (int y = 0; y < HEIGHT; ++y)
         {
-            fb_[y][x][0] = c.r;
-            fb_[y][x][1] = c.g;
-            fb_[y][x][2] = c.b;
+            for (int x = 0; x < WIDTH; ++x)
+            {
+                uint8_t* p = fb_[y][x];
+                p[0] = c.r;
+                p[1] = c.g;
+                p[2] = c.b;
+            }
         }
     }
 }
@@ -67,82 +72,79 @@ const uint8_t* GfxDriver::getPixelPtr(int x, int y) const
     return fb_[y][x];
 }
 
-void GfxDriver::transform(int x, int y, int* out_x, int* out_y) const
-{
-    switch (rotation_)
-    {
-        case 0:
-            *out_x = x;
-            *out_y = y;
-            break;
-        case 1:
-            *out_x = HEIGHT - 1 - y;
-            *out_y = x;
-            break;
-        case 2:
-            *out_x = WIDTH - 1 - x;
-            *out_y = HEIGHT - 1 - y;
-            break;
-        case 3:
-            *out_x = y;
-            *out_y = WIDTH - 1 - x;
-            break;
-        default:
-            *out_x = x;
-            *out_y = y;
-            break;
-    }
-}
-
-void GfxDriver::writePixelRaw(int x, int y, const Color& c)
-{
-    fb_[y][x][0] = c.r;
-    fb_[y][x][1] = c.g;
-    fb_[y][x][2] = c.b;
-}
-
-void GfxDriver::drawPixel(int x, int y, const Color& c, uint8_t brightness)
-{
-    if (x < 0 || x >= width() || y < 0 || y >= height()) return;
-    int tx, ty;
-    transform(x, y, &tx, &ty);
-    writePixelRaw(tx, ty, ScaleColor(c, brightness));
-}
-
 Color GfxDriver::getPixel(int x, int y) const
 {
-    if (x < 0 || x >= width() || y < 0 || y >= height()) return Colors::BLACK;
-    int tx, ty;
-    transform(x, y, &tx, &ty);
-    return Color(fb_[ty][tx][0], fb_[ty][tx][1], fb_[ty][tx][2]);
+    if ((uint16_t)x >= WIDTH || (uint16_t)y >= HEIGHT) return Colors::BLACK;
+    const uint8_t* p = fb_[y][x];
+    return Color(p[0], p[1], p[2]);
 }
 
 void GfxDriver::drawFastVLine(int x, int y, int h, const Color& c, uint8_t brightness)
 {
-    if (x < 0 || x >= width()) return;
+    if ((uint16_t)x >= WIDTH) return;
     if (y < 0)
     {
         h += y;
         y = 0;
     }
-    if (y + h > height()) h = height() - y;
+    if (y + h > HEIGHT) h = HEIGHT - y;
     if (h <= 0) return;
-    Color sc = ScaleColor(c, brightness);
-    for (int i = y; i < y + h; i++) drawPixel(x, i, sc, 255);
+
+    if (brightness == 255)
+    {
+        for (int i = y; i < y + h; ++i)
+        {
+            uint8_t* p = fb_[i][x];
+            p[0] = c.r;
+            p[1] = c.g;
+            p[2] = c.b;
+        }
+    }
+    else
+    {
+        Color sc = ScaleColor(c, brightness);
+        for (int i = y; i < y + h; ++i)
+        {
+            uint8_t* p = fb_[i][x];
+            p[0] = sc.r;
+            p[1] = sc.g;
+            p[2] = sc.b;
+        }
+    }
 }
 
 void GfxDriver::drawFastHLine(int x, int y, int w, const Color& c, uint8_t brightness)
 {
-    if (y < 0 || y >= height()) return;
+    if ((uint16_t)y >= HEIGHT) return;
     if (x < 0)
     {
         w += x;
         x = 0;
     }
-    if (x + w > width()) w = width() - x;
+    if (x + w > WIDTH) w = WIDTH - x;
     if (w <= 0) return;
-    Color sc = ScaleColor(c, brightness);
-    for (int i = x; i < x + w; i++) drawPixel(i, y, sc, 255);
+
+    if (brightness == 255)
+    {
+        for (int i = x; i < x + w; ++i)
+        {
+            uint8_t* p = fb_[y][i];
+            p[0] = c.r;
+            p[1] = c.g;
+            p[2] = c.b;
+        }
+    }
+    else
+    {
+        Color sc = ScaleColor(c, brightness);
+        for (int i = x; i < x + w; ++i)
+        {
+            uint8_t* p = fb_[y][i];
+            p[0] = sc.r;
+            p[1] = sc.g;
+            p[2] = sc.b;
+        }
+    }
 }
 
 void GfxDriver::drawLine(int x0, int y0, int x1, int y1, const Color& c, uint8_t brightness)
@@ -189,15 +191,19 @@ void GfxDriver::fillRect(int x, int y, int w, int h, const Color& c, uint8_t bri
         h += y;
         y = 0;
     }
-    if (x + w > width()) w = width() - x;
-    if (y + h > height()) h = height() - y;
+    if (x + w > WIDTH) w = WIDTH - x;
+    if (y + h > HEIGHT) h = HEIGHT - y;
     if (w <= 0 || h <= 0) return;
+
     Color sc = ScaleColor(c, brightness);
-    for (int j = y; j < y + h; j++)
+    for (int j = y; j < y + h; ++j)
     {
-        for (int i = x; i < x + w; i++)
+        for (int i = x; i < x + w; ++i)
         {
-            drawPixel(i, j, sc, 255);
+            uint8_t* p = fb_[j][i];
+            p[0] = sc.r;
+            p[1] = sc.g;
+            p[2] = sc.b;
         }
     }
 }
@@ -243,7 +249,6 @@ void GfxDriver::drawTriangle(int x0, int y0, int x1, int y1, int x2, int y2, con
 
 void GfxDriver::fillTriangle(int x0, int y0, int x1, int y1, int x2, int y2, const Color& c, uint8_t brightness)
 {
-    // ... 顶点排序（不变） ...
     int a, b, y, last;
     if (y0 > y1)
     {
@@ -322,25 +327,31 @@ void GfxDriver::drawBitmap(
     int byteWidth = (w + 7) / 8;
     Color sc = ScaleColor(color, brightness);
     Color sbg;
-    const Color* pBg = nullptr;
-    if (bg)
-    {
-        sbg = ScaleColor(*bg, brightness);
-        pBg = &sbg;
-    }
+    bool hasBg = (bg != nullptr);
+    if (hasBg) sbg = ScaleColor(*bg, brightness);
+
     for (int j = 0; j < h; j++)
     {
+        int py = y + j;
+        if ((uint16_t)py >= HEIGHT) continue;
         for (int i = 0; i < w; i++)
         {
+            int px = x + i;
+            if ((uint16_t)px >= WIDTH) continue;
             int byteIdx = j * byteWidth + i / 8;
             uint8_t bitMask = 0x80 >> (i & 7);
+            uint8_t* p = fb_[py][px];
             if (bitmap[byteIdx] & bitMask)
             {
-                drawPixel(x + i, y + j, sc, 255);
+                p[0] = sc.r;
+                p[1] = sc.g;
+                p[2] = sc.b;
             }
-            else if (pBg)
+            else if (hasBg)
             {
-                drawPixel(x + i, y + j, *pBg, 255);
+                p[0] = sbg.r;
+                p[1] = sbg.g;
+                p[2] = sbg.b;
             }
         }
     }
@@ -352,13 +363,20 @@ void GfxDriver::drawXBitmap(int x, int y, const uint8_t* bitmap, int w, int h, c
     Color sc = ScaleColor(color, brightness);
     for (int j = 0; j < h; j++)
     {
+        int py = y + j;
+        if ((uint16_t)py >= HEIGHT) continue;
         for (int i = 0; i < w; i++)
         {
+            int px = x + i;
+            if ((uint16_t)px >= WIDTH) continue;
             int byteIdx = j * byteWidth + i / 8;
             uint8_t bitMask = 1 << (i & 7);
             if (bitmap[byteIdx] & bitMask)
             {
-                drawPixel(x + i, y + j, sc, 255);
+                uint8_t* p = fb_[py][px];
+                p[0] = sc.r;
+                p[1] = sc.g;
+                p[2] = sc.b;
             }
         }
     }
@@ -366,12 +384,54 @@ void GfxDriver::drawXBitmap(int x, int y, const uint8_t* bitmap, int w, int h, c
 
 void GfxDriver::drawRGBBitmap(int x, int y, const Color* bitmap, int w, int h, uint8_t brightness)
 {
-    for (int j = 0; j < h; j++)
+    // 目标裁剪计算
+    int src_x = 0, src_y = 0;
+    int dst_x = x, dst_y = y;
+    int dst_w = w, dst_h = h;
+
+    if (dst_x < 0)
     {
-        for (int i = 0; i < w; i++)
+        src_x = -dst_x;
+        dst_w += dst_x;
+        dst_x = 0;
+    }
+    if (dst_y < 0)
+    {
+        src_y = -dst_y;
+        dst_h += dst_y;
+        dst_y = 0;
+    }
+    if (dst_x + dst_w > WIDTH) dst_w = WIDTH - dst_x;
+    if (dst_y + dst_h > HEIGHT) dst_h = HEIGHT - dst_y;
+    if (dst_w <= 0 || dst_h <= 0) return;
+
+    if (brightness == 255)
+    {
+        for (int j = 0; j < dst_h; ++j)
         {
-            Color sc = ScaleColor(bitmap[j * w + i], brightness);
-            drawPixel(x + i, y + j, sc, 255);
+            const Color* src = bitmap + (src_y + j) * w + src_x;
+            for (int i = 0; i < dst_w; ++i)
+            {
+                uint8_t* p = fb_[dst_y + j][dst_x + i];
+                p[0] = src[i].r;
+                p[1] = src[i].g;
+                p[2] = src[i].b;
+            }
+        }
+    }
+    else
+    {
+        for (int j = 0; j < dst_h; ++j)
+        {
+            const Color* src = bitmap + (src_y + j) * w + src_x;
+            for (int i = 0; i < dst_w; ++i)
+            {
+                Color sc = ScaleColor(src[i], brightness);
+                uint8_t* p = fb_[dst_y + j][dst_x + i];
+                p[0] = sc.r;
+                p[1] = sc.g;
+                p[2] = sc.b;
+            }
         }
     }
 }
@@ -382,24 +442,47 @@ void GfxDriver::drawChar(int x, int y, char c, const Color& color, const Color& 
     const uint8_t* chr = font5x7[c - 32];
     Color sc = ScaleColor(color, brightness);
     Color sbg = ScaleColor(bg, brightness);
+
     for (int i = 0; i < 5; i++)
     {
         uint8_t line = chr[i];
         for (int j = 0; j < 7; j++, line >>= 1)
         {
+            int px = x + i * size;
+            int py = y + j * size;
             if (line & 1)
             {
                 if (size == 1)
-                    drawPixel(x + i, y + j, sc, 255);
+                {
+                    if ((uint16_t)px < WIDTH && (uint16_t)py < HEIGHT)
+                    {
+                        uint8_t* p = fb_[py][px];
+                        p[0] = sc.r;
+                        p[1] = sc.g;
+                        p[2] = sc.b;
+                    }
+                }
                 else
-                    fillRect(x + i * size, y + j * size, size, size, sc, 255);
+                {
+                    fillRect(px, py, size, size, sc, 255);
+                }
             }
             else if (sbg != Colors::BLACK)
             {
                 if (size == 1)
-                    drawPixel(x + i, y + j, sbg, 255);
+                {
+                    if ((uint16_t)px < WIDTH && (uint16_t)py < HEIGHT)
+                    {
+                        uint8_t* p = fb_[py][px];
+                        p[0] = sbg.r;
+                        p[1] = sbg.g;
+                        p[2] = sbg.b;
+                    }
+                }
                 else
-                    fillRect(x + i * size, y + j * size, size, size, sbg, 255);
+                {
+                    fillRect(px, py, size, size, sbg, 255);
+                }
             }
         }
     }
@@ -423,9 +506,4 @@ void GfxDriver::drawString(
         }
         str++;
     }
-}
-
-void GfxDriver::setRotation(uint8_t r)
-{
-    rotation_ = r & 3;
 }
