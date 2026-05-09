@@ -3,10 +3,14 @@
 #include "ap_wifi.h"
 #include "audio_capture.h"
 #include "ds3231.h"
+#include "es7210.h"
+#include "es8311.h"
 #include "husb238.h"
 #include "i2c.h"
 #include "key.h"
 #include "light_sensor.h"
+#include "qmc5883p.h"
+#include "qmi8658.h"
 #include "scene_manager.h"
 #include "sht40.h"
 #include "spi.h"
@@ -23,6 +27,10 @@ extern "C" void app_main(void)
     Sht40::GetInstance().InitSht40();
     DS3231::GetInstance().InitDS3231();
     Husb238::GetInstance().InitHusb238();
+    Qmi8658::GetInstance().InitQmi8658();
+    Es8311::GetInstance().InitEs8311();
+    Qmc5883P::GetInstance().InitQmc5883P();
+    Es7210::GetInstance().InitEs7210();
     AudioCapture::GetInstance().InitAudioCapture();
     LightSensor::GetInstance().InitLightSensor();
     ApWifi::GetInstance().ApWifiInit();

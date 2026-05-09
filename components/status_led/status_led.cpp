@@ -9,7 +9,7 @@ StatusLed::StatusLed(gpio_num_t led_gpio1, gpio_num_t led_gpio2)
 void StatusLed::InitStatusLed()
 {
     gpio_config_t gpio_cfg = {
-        .pin_bit_mask = (1ULL << led_pin_[0]) | (1ULL << led_pin_[1]),
+        .pin_bit_mask = (1ULL << led_pin_[0]) | (1ULL << led_pin_[1]) | (1ULL << buzzer_pin_),
         .mode = GPIO_MODE_OUTPUT,
         .pull_up_en = GPIO_PULLUP_DISABLE,
         .pull_down_en = GPIO_PULLDOWN_DISABLE,
@@ -18,7 +18,7 @@ void StatusLed::InitStatusLed()
     gpio_config(&gpio_cfg);
 
     xTaskCreatePinnedToCore(GetStatusTask, "GetStatusTask", 2048, this, 1, nullptr, 1);
-    xTaskCreatePinnedToCore(WifiListenerTask, "WifiListenerTask", 2048, this, 1, nullptr, 1);
+    xTaskCreatePinnedToCore(WifiListenerTask, "WifiListenerTask", 4096, this, 1, nullptr, 1);
     xTaskCreatePinnedToCore(WifiStatusTask, "WifiStatusTask", 2048, this, 1, nullptr, 1);
     xTaskCreatePinnedToCore(SetSystemStatusTask, "SetSystemStatusTask", 2048, this, 1, nullptr, 1);
     ESP_LOGI("StatusLed", "InitStatusLed successfull");

@@ -18,7 +18,7 @@ class StatusLed
         return instance;
     }
 
-    StatusLed(gpio_num_t led_pin1 = GPIO_NUM_19, gpio_num_t led_pin2 = GPIO_NUM_20);
+    StatusLed(gpio_num_t led_pin1 = GPIO_NUM_3, gpio_num_t led_pin2 = GPIO_NUM_46);
 
     ~StatusLed() = default;
 
@@ -72,6 +72,8 @@ class StatusLed
 
    private:
     gpio_num_t led_pin_[2];
+
+    gpio_num_t buzzer_pin_ = GPIO_NUM_10;
 
     NetworkLedStatusEnum network_led_status_ = STATUS_NETWOIRK_SCANING;
 
