@@ -8,7 +8,7 @@ set(src_dirs
     i2c_devices/qmi8658
     i2c_devices/qmc5883p
     i2c_devices/es8311
-    i2c_devices/es7210
+    i2c_devices/es7210codec
     spi_devices
     spi_devices/sdio
     audio_capture
@@ -27,7 +27,7 @@ set(include_dirs
     i2c_devices/qmi8658
     i2c_devices/qmc5883p
     i2c_devices/es8311
-    i2c_devices/es7210
+    i2c_devices/es7210codec
     spi_devices
     spi_devices/sdio
     audio_capture

@@ -1,9 +1,8 @@
 #include <stdio.h>
 
 #include "ap_wifi.h"
-#include "audio_capture.h"
 #include "ds3231.h"
-#include "es7210.h"
+#include "es7210codec.h"
 #include "es8311.h"
 #include "husb238.h"
 #include "i2c.h"
@@ -30,8 +29,7 @@ extern "C" void app_main(void)
     Qmi8658::GetInstance().InitQmi8658();
     Es8311::GetInstance().InitEs8311();
     Qmc5883P::GetInstance().InitQmc5883P();
-    Es7210::GetInstance().InitEs7210();
-    AudioCapture::GetInstance().InitAudioCapture();
+    Es7210Codec::GetInstance().InitEs7210Codec();
     LightSensor::GetInstance().InitLightSensor();
     ApWifi::GetInstance().ApWifiInit();
     SceneManager::GetInstance().InitSceneManager();
