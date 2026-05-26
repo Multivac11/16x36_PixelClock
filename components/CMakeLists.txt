@@ -1,14 +1,16 @@
 set(src_dirs
     status_led
     key
-    i2c_devices
-    i2c_devices/sht40
-    i2c_devices/husb238
-    i2c_devices/ds3231
-    i2c_devices/qmi8658
-    i2c_devices/qmc5883p
-    i2c_devices/es8311
-    i2c_devices/es7210codec
+    device
+    device/i2c_device
+    device/i2c_device/ds3231
+    device/i2c_device/es7210
+    device/i2c_device/es8311
+    device/i2c_device/husb238
+    device/i2c_device/qmc5883p
+    device/i2c_device/qmi8658
+    device/i2c_device/sht40
+    audio_capture
     spi_devices
     spi_devices/sdio
     light_sensor
@@ -19,14 +21,16 @@ set(src_dirs
 set(include_dirs
     status_led
     key
-    i2c_devices
-    i2c_devices/sht40
-    i2c_devices/husb238
-    i2c_devices/ds3231
-    i2c_devices/qmi8658
-    i2c_devices/qmc5883p
-    i2c_devices/es8311
-    i2c_devices/es7210codec
+    device
+    device/i2c_device
+    device/i2c_device/ds3231
+    device/i2c_device/es7210
+    device/i2c_device/es8311
+    device/i2c_device/husb238
+    device/i2c_device/qmc5883p
+    device/i2c_device/qmi8658
+    device/i2c_device/sht40
+    audio_capture
     spi_devices
     spi_devices/sdio
     light_sensor

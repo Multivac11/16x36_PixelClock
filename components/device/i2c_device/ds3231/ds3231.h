@@ -1,21 +1,13 @@
 #pragma once
 
-#include "esp_log.h"
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "i2c.h"
+#include "i2c_device.h"
 
-#define DS3231_ADDR 0x68
-
-class DS3231
+class DS3231 : public I2CDevice
 {
    public:
-    static DS3231& GetInstance()
-    {
-        static DS3231 instance;
+    explicit DS3231(i2c_master_bus_handle_t bus, uint16_t addr);
 
-        return instance;
-    }
+    bool Init() override;
 
     struct DateTime
     {
@@ -28,14 +20,6 @@ class DS3231
         uint8_t weekday;  // 1~7
     };
 
-    DS3231() = default;
-
-    ~DS3231() = default;
-
-    void InitDS3231();
-
-    bool RegisterDS3231();
-
     bool GetTime(DateTime& dt);
 
     bool SetTime(const DateTime& dt);
@@ -47,12 +31,9 @@ class DS3231
     bool ClearOSF();  // 清除振荡器停止标志
 
    private:
-    static void Ds3231TimeTask(void*);
+    bool WriteReg(uint8_t reg, uint16_t val);
 
-    void Ds3231Time();
-
-   private:
-    i2c_master_dev_handle_t dev_handle_ = nullptr;
+    uint16_t ReadReg(uint8_t reg);
 
     DateTime dt_;
 

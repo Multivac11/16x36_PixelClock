@@ -1,20 +1,13 @@
 #pragma once
 
-#include "esp_log.h"
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "i2c.h"
+#include "i2c_device.h"
 
-#define HUSB238_ADDR 0x08
-
-class Husb238
+class HUSB238 : public I2CDevice
 {
    public:
-    static Husb238 &GetInstance()
-    {
-        static Husb238 instance;
-        return instance;
-    }
+    explicit HUSB238(i2c_master_bus_handle_t bus, uint16_t addr);
+
+    bool Init() override;
 
     /// @brief 寄存器地址
     enum HUSB238_reg_addr
@@ -71,14 +64,6 @@ class Husb238
         uint16_t voltage;  // 电压值 (V)
     } Capability_t;
 
-    Husb238() = default;
-
-    ~Husb238() = default;
-
-    void InitHusb238();
-
-    bool RegisterHusb238();
-
     // 底层寄存器读写（已封装重复启动）
     esp_err_t ReadReg(uint8_t reg, uint8_t *data);
 
@@ -100,17 +85,14 @@ class Husb238
     esp_err_t HardReset();
 
     // 状态查询（读 0x01）
-    bool IsAttached();        // D6: ATTACH
+    bool IsAttached();  // D6: ATTACH
+
     uint8_t GetPDResponse();  // D[5:3]: PD_RESPONSE (0=无响应 1=成功 ...)
-    bool IsCCDirFlip();       // D7: CC_DIR
+
+    bool IsCCDirFlip();  // D7: CC_DIR
 
     // 编码转换工具
     static float CurrentCodeToAmp(uint8_t code);  // 0x0~0xF -> A
 
     static uint16_t VoltageCodeToVolt(uint8_t code);  // 0x0~0x6 -> V
-
-   private:
-    i2c_master_dev_handle_t dev_handle_ = nullptr;
-
-    bool registered_ = false;
 };
