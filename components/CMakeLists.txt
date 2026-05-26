@@ -11,7 +11,6 @@ set(src_dirs
     i2c_devices/es7210codec
     spi_devices
     spi_devices/sdio
-    audio_capture
     light_sensor
     ws_matrix
     wifi_manager
@@ -30,7 +29,6 @@ set(include_dirs
     i2c_devices/es7210codec
     spi_devices
     spi_devices/sdio
-    audio_capture
     light_sensor
     ws_matrix
     wifi_manager
