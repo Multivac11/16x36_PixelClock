@@ -4,11 +4,17 @@ static const char* TAG = "SceneManager";
 void SceneManager::InitSceneManager()
 {
     MatrixHal::GetInstance().MatrixHalInit();
-    auto& sd = SpiSdCard::GetInstance();
+    auto* sd = SPIBusManager::GetInstance().GetDeviceByCSPin<SDCard>(GPIO_NUM_14);
     auto& gfx = MatrixHal::GetInstance().Gfx();
 
-    sd.ListDirectory("/sdcard/img");
-    sd.ListDirectory(ANIM_DIR);
+    if (!sd)
+    {
+        ESP_LOGE(TAG, "SD card not found");
+        return;
+    }
+
+    sd->ListDirectory("/sdcard/img");
+    sd->ListDirectory(ANIM_DIR);
 
     int id0 = AddAnimation("fire_anim_5f_16x16.bin", 0, 0, 16, 16, 5, 100, 25);
     if (id0 >= 0) ESP_LOGI(TAG, "Anim[0] fire @ slot %d", id0);
@@ -73,8 +79,13 @@ int SceneManager::AddAnimation(const char* filename,
                                uint16_t interval_ms,
                                uint8_t brightness)
 {
-    auto& sd = SpiSdCard::GetInstance();
-    if (!sd.IsMounted())
+    auto* sd = SPIBusManager::GetInstance().GetDeviceByCSPin<SDCard>(GPIO_NUM_14);
+    if (!sd)
+    {
+        ESP_LOGE(TAG, "SD card not found");
+        return -1;
+    }
+    if (!sd->IsMounted())
     {
         ESP_LOGE(TAG, "SD not mounted");
         return -1;
@@ -104,7 +115,7 @@ int SceneManager::AddAnimation(const char* filename,
 
     char path[128];
     snprintf(path, sizeof(path), "%s/%s", ANIM_DIR, filename);
-    if (!sd.ReadFile(path, slots_[slot].buffer, total))
+    if (!sd->ReadFile(path, slots_[slot].buffer, total))
     {
         ESP_LOGE(TAG, "Read failed: %s", path);
         return -1;

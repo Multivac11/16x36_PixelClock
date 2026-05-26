@@ -4,7 +4,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "matrix_hal.h"
-#include "spi_sdcard.h"
+#include "spi_bus.h"
 
 #define ANIM_DIR "/sdcard/gif"
 #define MAX_ANIMATIONS 4

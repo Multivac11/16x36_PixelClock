@@ -78,7 +78,7 @@ void AudioCapture::GetAudios()
         float mean_left = (float)sum_left / frame_count;
         float mean_right = (float)sum_right / frame_count;
 
-        printf("%f,%f\n", mean_left, mean_right);
+        // printf("%f,%f\n", mean_left, mean_right);
     }
     heap_caps_free(rx_buffer);
     vTaskDelete(NULL);

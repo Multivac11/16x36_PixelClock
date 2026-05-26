@@ -10,9 +10,9 @@ set(src_dirs
     device/i2c_device/qmc5883p
     device/i2c_device/qmi8658
     device/i2c_device/sht40
+    device/spi_device
+    device/spi_device/sd_card
     audio_capture
-    spi_devices
-    spi_devices/sdio
     light_sensor
     ws_matrix
     wifi_manager
@@ -30,9 +30,9 @@ set(include_dirs
     device/i2c_device/qmc5883p
     device/i2c_device/qmi8658
     device/i2c_device/sht40
+    device/spi_device
+    device/spi_device/sd_card
     audio_capture
-    spi_devices
-    spi_devices/sdio
     light_sensor
     ws_matrix
     wifi_manager
