@@ -16,10 +16,8 @@ void MatrixHal::MatrixHalInit()
                                          .flags = {.with_dma = LED_STRIP_USE_DMA}};
 
     ESP_ERROR_CHECK(led_strip_new_rmt_device(&strip_config, &rmt_config, &led_strip_));
-    ESP_LOGI(TAG, "Matrix init: %dx%d (%d LEDs), brightness=%d/255", MATRIX_WIDTH, MATRIX_HEIGHT, LED_STRIP_LED_COUNT,
-             brightness_);
 
-    // 预计算每个 (x,y) 对应的硬件索引
+    // 预计算每个 (x,y) 对应的硬件索引（纯硬件映射，属于 HAL 层）
     for (int y = 0; y < MATRIX_HEIGHT; ++y)
     {
         for (int x = 0; x < MATRIX_WIDTH; ++x)
@@ -28,21 +26,10 @@ void MatrixHal::MatrixHalInit()
         }
     }
 
-    // 初始化亮度 LUT
     SetBrightness(brightness_);
 
-    // 启动后缓慢变亮再变暗，确认硬件通电
-    const uint8_t peak = 30;
-    const int steps = 50;
-    const int delay_ms = 5;
-
-    for (int i = 0; i <= steps; ++i)
-    {
-        uint8_t v = (uint8_t)(peak * i / steps);
-        gfx_.clear(Color(v, v, v));
-        Refresh();
-        vTaskDelay(pdMS_TO_TICKS(delay_ms));
-    }
+    ESP_LOGI(TAG, "Matrix init: %dx%d (%d LEDs), brightness=%d/255", MATRIX_WIDTH, MATRIX_HEIGHT, LED_STRIP_LED_COUNT,
+             brightness_);
 }
 
 void MatrixHal::Refresh()

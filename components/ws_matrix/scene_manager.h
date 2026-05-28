@@ -7,8 +7,10 @@
 #include "spi_bus.h"
 
 #define ANIM_DIR "/sdcard/gif"
+#define IMG_DIR "/sdcard/img"
 #define MAX_ANIMATIONS 4
 #define MAX_ANIM_BYTES_PER_SPRITE (32 * 1024)
+#define SPRITE_SIZE (16 * 16 * 3)
 
 class SceneManager
 {
@@ -31,6 +33,8 @@ class SceneManager
 
     void Tick(uint32_t now_ms);
 
+    void SplashScreen();
+
     int AddAnimation(const char* filename,
                      int16_t x,
                      int16_t y,
@@ -48,9 +52,22 @@ class SceneManager
 
     void PauseAnim(int idx);
 
-    static void TestTask(void* pv);
+    void SetBackground(const Color& c)
+    {
+        background_color_ = c;
+        background_dirty_ = true;
+    }
 
-    void TestTaskBody();
+    // 上层画完 gfx 后调用，标记需要刷新的区域
+    void InvalidateRect(int x, int y, int w, int h);
+
+    static void RenderTask(void* pv);
+
+    static void UIShowTask(void* pv);
+
+    void RenderTaskBody();
+
+    void UIShowTaskBody();
 
    private:
     SceneManager() = default;
@@ -60,4 +77,10 @@ class SceneManager
     bool valid(int idx) const;
 
     AnimationSlot slots_[MAX_ANIMATIONS];
+
+    Color background_color_ = Colors::BLACK;
+    bool background_dirty_ = false;
+
+    bool fb_dirty_ = false;
+    int dirty_x1_ = 0, dirty_y1_ = 0, dirty_x2_ = 0, dirty_y2_ = 0;
 };

@@ -42,16 +42,20 @@ class Animator
     }
     void SetBrightness(uint8_t b) { brightness_ = b; }
 
-    // 在主循环中周期性调用，传入当前时间 ms
-    bool Tick(uint32_t now_ms, GfxDriver& gfx)
+    // 只检查计时、推进帧索引，不绘制。返回 true 表示帧号变了
+    bool AdvanceFrame(uint32_t now_ms)
     {
         if (!playing_ || !desc_) return false;
+        if (last_tick_ms_ == 0)
+        {
+            last_tick_ms_ = now_ms;
+            return false;
+        }
         if (now_ms - last_tick_ms_ >= desc_->interval_ms)
         {
             last_tick_ms_ = now_ms;
-            DrawCurrentFrame(gfx);
             current_frame_ = (current_frame_ + 1) % desc_->frame_count;
-            return true;  // 帧切换了，需要 Refresh
+            return true;
         }
         return false;
     }
@@ -63,16 +67,18 @@ class Animator
         DrawCurrentFrame(gfx);
     }
 
-    uint8_t CurrentFrame() const { return current_frame_; }
-    bool IsPlaying() const { return playing_; }
-
-   private:
     void DrawCurrentFrame(GfxDriver& gfx)
     {
+        if (!desc_) return;
         uint32_t offset = (uint32_t)current_frame_ * desc_->frame_bytes;
         const Color* bitmap = reinterpret_cast<const Color*>(desc_->data + offset);
         gfx.drawRGBBitmap(pos_x_, pos_y_, bitmap, desc_->frame_width, desc_->frame_height, brightness_);
     }
+
+    uint8_t CurrentFrame() const { return current_frame_; }
+    bool IsPlaying() const { return playing_; }
+
+   private:
     const AnimationDesc* desc_ = nullptr;
     uint8_t current_frame_ = 0;
     uint32_t last_tick_ms_ = 0;

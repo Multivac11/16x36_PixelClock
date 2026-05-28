@@ -8,8 +8,6 @@ SDCard::SDCard(spi_host_device_t host, gpio_num_t cs_pin) : SPIDevice(host, cs_p
 
 bool SDCard::Init()
 {
-    // 不使用 SPIDevice::Init()，因为 esp_vfs_fat_sdspi_mount 内部会调用 spi_bus_add_device
-
     const sdmmc_host_t host_cfg = SDSPI_HOST_DEFAULT();
 
     sdspi_device_config_t slot_config = SDSPI_DEVICE_CONFIG_DEFAULT();

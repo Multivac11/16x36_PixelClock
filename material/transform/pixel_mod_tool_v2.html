@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pixel Mod Tool | 像素取模工作台 v3 (帧管理)</title>
+    <title>Pixel Mod Tool | 像素取模工作台 v3.1 (降分辨率取模)</title>
     <style>
         :root {
             --bg: #0f0f1a;
@@ -459,12 +459,11 @@
         }
     </style>
     <base target="_blank">
-    <base target="_blank">
 </head>
 
 <body>
     <div id="sidebar">
-        <h1>PIXEL MOD <span style="font-size:12px;color:var(--accent2);">v3.0</span></h1>
+        <h1>PIXEL MOD <span style="font-size:12px;color:var(--accent2);">v3.1</span></h1>
 
         <div class="section">
             <h2>上传图片</h2>
@@ -486,6 +485,7 @@
                 <label>图像模式</label>
                 <select id="imgMode">
                     <option value="single">单张图片 (Sprite)</option>
+                    <option value="resize">等效降分辨率 (Resize)</option>
                     <option value="sheet">精灵表 / 动画 (Sprite Sheet)</option>
                 </select>
             </div>
@@ -501,6 +501,23 @@
                     <input type="range" id="animSpeed" min="20" max="1000" value="200">
                 </div>
                 <label class="chk"><input type="checkbox" id="autoSkipEmpty"> 自动检测并标记空白帧</label>
+            </div>
+            <div id="resizeOpts" class="hidden" style="gap:8px; display:flex; flex-direction:column;">
+                <div class="row">
+                    <div class="control"><label>目标宽度</label><input type="number" id="resizeW" value="36" min="1"
+                            max="512"></div>
+                    <div class="control"><label>目标高度</label><input type="number" id="resizeH" value="16" min="1"
+                            max="512"></div>
+                </div>
+                <div class="control">
+                    <label>缩放模式</label>
+                    <select id="resizeMode">
+                        <option value="stretch">拉伸 (Stretch)</option>
+                        <option value="fit">等比缩放-填充 (Fit)</option>
+                        <option value="crop" selected>等比缩放-裁剪 (Crop)</option>
+                    </select>
+                </div>
+                <div class="info-row" style="margin-top:4px;"><span>提示</span><span>原图虚线框示意裁剪区域</span></div>
             </div>
         </div>
 
@@ -566,7 +583,7 @@
             <div class="control" style="margin-top:6px;">
                 <label>导出模式</label>
                 <select id="exportMode">
-                    <option value="sprite">Sprite — 原始尺寸 RGB</option>
+                    <option value="sprite">Sprite — 目标尺寸 RGB</option>
                     <option value="frame">Frame — 36×16 屏幕映射</option>
                     <option value="anim">Animation — 所有帧合并数组</option>
                 </select>
@@ -594,7 +611,7 @@
     <div id="main">
         <div id="toolbar">
             <b>预览工作台</b>
-            <span style="margin-left:auto;">提示：点击帧缩略图可查看单帧，悬停显示删除按钮</span>
+            <span style="margin-left:auto;">提示：降分辨率后可在右侧预览最终像素效果</span>
         </div>
         <div id="canvasWrap">
             <div class="preview-box" id="boxOrig">
@@ -648,7 +665,8 @@
             bgColor: $('bgColor'), dither: $('dither'), scale: $('scale'), showGrid: $('showGrid'),
             exportMode: $('exportMode'), offX: $('offX'), offY: $('offY'), fileName: $('fileName'),
             imgMode: $('imgMode'), sheetCols: $('sheetCols'), sheetRows: $('sheetRows'), animSpeed: $('animSpeed'),
-            autoSkipEmpty: $('autoSkipEmpty')
+            autoSkipEmpty: $('autoSkipEmpty'),
+            resizeW: $('resizeW'), resizeH: $('resizeH'), resizeMode: $('resizeMode')
         };
         const labels = {
             brightness: $('v-brightness'), contrast: $('v-contrast'), saturation: $('v-saturation'),
@@ -675,11 +693,14 @@
                 if (k === 'exportMode') $('frameOpts').classList.toggle('hidden', el.value !== 'frame');
                 if (k === 'imgMode') {
                     $('sheetOpts').classList.toggle('hidden', el.value !== 'sheet');
+                    $('resizeOpts').classList.toggle('hidden', el.value !== 'resize');
                     $('boxAnim').style.display = el.value === 'sheet' ? 'flex' : 'none';
                     if (el.value === 'sheet') { startAnimPreview(); } else { stopAnimPreview(); }
+                    if (el.value === 'resize' && state.img) { render(); }
                 }
-                if (['sheetCols', 'sheetRows', 'brightness', 'contrast', 'saturation', 'hue', 'gamma', 'depth', 'alpha', 'bgColor', 'dither', 'autoSkipEmpty'].includes(k)) {
+                if (['sheetCols', 'sheetRows', 'brightness', 'contrast', 'saturation', 'hue', 'gamma', 'depth', 'alpha', 'bgColor', 'dither', 'autoSkipEmpty', 'resizeW', 'resizeH', 'resizeMode'].includes(k)) {
                     if (inputs.imgMode.value === 'sheet' && state.img) processSheet();
+                    if (inputs.imgMode.value === 'resize' && state.img) render();
                 }
                 render();
             });
@@ -713,6 +734,8 @@
                 if (inputs.imgMode.value === 'sheet') {
                     processSheet();
                     startAnimPreview();
+                } else if (inputs.imgMode.value === 'resize') {
+                    render();
                 } else {
                     state.frames = []; state.allFrames = [];
                     render();
@@ -730,6 +753,10 @@
                 if (mode === 'sprite') bytes = state.width * state.height * 3;
                 else if (mode === 'frame') bytes = MATRIX_W * MATRIX_H * 3;
                 else bytes = state.width * state.height * 3;
+            } else if (imgMode === 'resize') {
+                const w = +inputs.resizeW.value, h = +inputs.resizeH.value;
+                bytes = w * h * 3;
+                $('infoFrames').textContent = `1 帧 / ${w}×${h}`;
             } else {
                 const n = state.frames.length;
                 if (n === 0) { $('infoFrames').textContent = '-'; $('infoBytes').textContent = '-'; return; }
@@ -1001,11 +1028,122 @@
             };
         }
 
+        /* ===================== 降分辨率核心 ===================== */
+        function getResizedFrame(params) {
+            const dstW = +inputs.resizeW.value;
+            const dstH = +inputs.resizeH.value;
+            const mode = inputs.resizeMode.value;
+            const tmp = document.createElement('canvas');
+            tmp.width = dstW; tmp.height = dstH;
+            const tctx = tmp.getContext('2d');
+            // 先填充背景色
+            const bg = hexToRgb(params.bgColor);
+            tctx.fillStyle = `rgb(${bg.r},${bg.g},${bg.b})`;
+            tctx.fillRect(0, 0, dstW, dstH);
+
+            if (mode === 'stretch') {
+                tctx.drawImage(state.img, 0, 0, dstW, dstH);
+            } else {
+                const scaleX = dstW / state.width;
+                const scaleY = dstH / state.height;
+                const scale = mode === 'fit' ? Math.min(scaleX, scaleY) : Math.max(scaleX, scaleY);
+                const sw = state.width * scale;
+                const sh = state.height * scale;
+                const sx = (dstW - sw) / 2;
+                const sy = (dstH - sh) / 2;
+                tctx.drawImage(state.img, sx, sy, sw, sh);
+            }
+
+            const imgData = tctx.getImageData(0, 0, dstW, dstH).data;
+            const out = new Uint8ClampedArray(dstW * dstH * 4);
+            for (let i = 0; i < dstW * dstH; i++) {
+                const idx = i * 4;
+                const x = i % dstW, y = Math.floor(i / dstW);
+                const [pr, pg, pb] = processPixel(imgData[idx], imgData[idx + 1], imgData[idx + 2], imgData[idx + 3], x, y, params);
+                out[idx] = pr; out[idx + 1] = pg; out[idx + 2] = pb; out[idx + 3] = 255;
+            }
+            return { data: out, width: dstW, height: dstH };
+        }
+
+        function renderResize() {
+            const { width, height, img } = state;
+            const params = getParams();
+            const dstW = +inputs.resizeW.value;
+            const dstH = +inputs.resizeH.value;
+            const mode = inputs.resizeMode.value;
+
+            // 原图预览 + 示意框
+            const oCvs = $('origCanvas');
+            const oCtx = oCvs.getContext('2d');
+            oCvs.width = width; oCvs.height = height;
+            oCtx.drawImage(img, 0, 0);
+
+            // 等比裁剪模式下，在原图上画示意框
+            if (mode === 'crop') {
+                const rSrc = width / height;
+                const rDst = dstW / dstH;
+                let cx = 0, cy = 0, cw = width, ch = height;
+                if (rSrc > rDst) {
+                    cw = height * rDst;
+                    cx = (width - cw) / 2;
+                } else if (rSrc < rDst) {
+                    ch = width / rDst;
+                    cy = (height - ch) / 2;
+                }
+                oCtx.strokeStyle = '#ff2a6d';
+                oCtx.lineWidth = Math.max(2, Math.floor(width / 300));
+                oCtx.setLineDash([8, 6]);
+                oCtx.strokeRect(cx, cy, cw, ch);
+                oCtx.setLineDash([]);
+                oCtx.fillStyle = 'rgba(255, 42, 109, 0.10)';
+                oCtx.fillRect(cx, cy, cw, ch);
+                oCtx.fillStyle = '#ff2a6d';
+                const fontSize = Math.max(10, Math.floor(width / 50));
+                oCtx.font = `bold ${fontSize}px monospace`;
+                oCtx.fillText(`Crop zone: ${Math.round(cw)}×${Math.round(ch)}`, cx + 4, cy + fontSize + 4);
+            } else if (mode === 'fit') {
+                oCtx.strokeStyle = '#05d9e8';
+                oCtx.lineWidth = Math.max(2, Math.floor(width / 300));
+                oCtx.setLineDash([4, 4]);
+                oCtx.strokeRect(0, 0, width, height);
+                oCtx.setLineDash([]);
+                oCtx.fillStyle = '#05d9e8';
+                const fontSize = Math.max(10, Math.floor(width / 50));
+                oCtx.font = `bold ${fontSize}px monospace`;
+                oCtx.fillText('Fit: full image scaled down', 4, fontSize + 4);
+            } else {
+                oCtx.fillStyle = '#ffaa00';
+                const fontSize = Math.max(10, Math.floor(width / 50));
+                oCtx.font = `bold ${fontSize}px monospace`;
+                oCtx.fillText('Stretch: non-uniform scale', 4, fontSize + 4);
+            }
+
+            // 生成目标分辨率预览
+            const fr = getResizedFrame(params);
+            const pc = $('procCanvas');
+            pc.width = fr.width; pc.height = fr.height;
+            pc.getContext('2d').putImageData(new ImageData(fr.data, fr.width, fr.height), 0, 0);
+            const scale = params.scale;
+            pc.style.width = (fr.width * scale) + 'px';
+            pc.style.height = (fr.height * scale) + 'px';
+
+            const gl = $('gridLayer');
+            gl.style.display = params.showGrid ? 'block' : 'none';
+            gl.style.setProperty('--gs', scale + 'px');
+
+            const oScale = Math.max(1, Math.min(8, Math.floor(320 / width)));
+            oCvs.style.width = (width * oScale) + 'px';
+            oCvs.style.height = (height * oScale) + 'px';
+        }
+
         /* ===================== 渲染 ===================== */
         function render() {
             if (!state.img) return;
-            if (inputs.imgMode.value === 'sheet') {
+            const mode = inputs.imgMode.value;
+            if (mode === 'sheet') {
                 if (state.frames.length > 0) renderFrame(state.currentFrame);
+            } else if (mode === 'resize') {
+                renderResize();
             } else {
                 const { width, height, origData } = state;
                 const params = getParams();
@@ -1044,7 +1182,6 @@
             gl.style.display = params.showGrid ? 'block' : 'none';
             gl.style.setProperty('--gs', scale + 'px');
 
-            // 高亮当前缩略图
             document.querySelectorAll('.thumb').forEach((t, i) => {
                 t.classList.toggle('active', i === frameIdx);
             });
@@ -1069,7 +1206,6 @@
                 cvs.style.width = (fr.width * scale) + 'px';
                 cvs.style.height = (fr.height * scale) + 'px';
                 state.currentFrame = (state.currentFrame + 1) % state.frames.length;
-                // 同步高亮缩略图
                 document.querySelectorAll('.thumb').forEach((t, i) => {
                     t.classList.toggle('active', i === state.currentFrame);
                 });
@@ -1121,22 +1257,24 @@
             }
 
             let buf, filename;
-            const isSheet = imgMode === 'sheet';
-            const frames = isSheet ? state.frames : [{
-                data: (() => {
-                    const { width, height, origData } = state;
-                    const out = new Uint8ClampedArray(width * height * 4);
-                    for (let i = 0; i < width * height; i++) {
-                        const idx = i * 4;
-                        const x = i % width, y = Math.floor(i / width);
-                        const [pr, pg, pb] = processPixel(origData[idx], origData[idx + 1], origData[idx + 2], origData[idx + 3], x, y, params);
-                        out[idx] = pr; out[idx + 1] = pg; out[idx + 2] = pb; out[idx + 3] = 255;
-                    }
-                    return out;
-                })(),
-                width: state.width,
-                height: state.height
-            }];
+            let frames;
+            if (imgMode === 'sheet') {
+                frames = state.frames;
+            } else if (imgMode === 'resize') {
+                frames = [getResizedFrame(params)];
+            } else {
+                const { width, height, origData } = state;
+                const out = new Uint8ClampedArray(width * height * 4);
+                for (let i = 0; i < width * height; i++) {
+                    const idx = i * 4;
+                    const x = i % width, y = Math.floor(i / width);
+                    const [pr, pg, pb] = processPixel(origData[idx], origData[idx + 1], origData[idx + 2], origData[idx + 3], x, y, params);
+                    out[idx] = pr; out[idx + 1] = pg; out[idx + 2] = pb; out[idx + 3] = 255;
+                }
+                frames = [{ data: out, width, height }];
+            }
+
+            if (frames.length === 0) { toast('没有可导出的帧'); return; }
             const fr = frames[0];
             const fw = fr.width, fh = fr.height;
 
