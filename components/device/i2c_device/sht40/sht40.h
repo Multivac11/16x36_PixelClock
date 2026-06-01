@@ -1,5 +1,7 @@
 #pragma once
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include "i2c_device.h"
 
 class SHT40 : public I2CDevice

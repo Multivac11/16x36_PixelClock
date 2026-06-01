@@ -20,10 +20,19 @@ bool SHT40::Init()
 
 bool SHT40::ReadEnvParams(EnvParamsStruct& params)
 {
-    uint8_t reg = 0xFD;  // 读取数据指令
+    uint8_t cmd = 0xFD;
     uint8_t buffer[6];
 
-    esp_err_t ret = WriteThenRead(&reg, 1, buffer, 7);
+    esp_err_t ret = Write(&cmd, 1);
+    if (ret != ESP_OK)
+    {
+        ESP_LOGE(TAG, "Failed to send measure command");
+        return false;
+    }
+
+    vTaskDelay(pdMS_TO_TICKS(10));
+
+    ret = Read(buffer, 6);
     if (ret != ESP_OK)
     {
         ESP_LOGE(TAG, "Failed to read SHT40 data");
