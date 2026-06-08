@@ -175,9 +175,22 @@ void SceneManager::UIShowTaskBody()
             switch (ws)
             {
                 case WifiManager::WIFI_STATUS_APMODE:
-                case WifiManager::WIFI_STATUS_SCANNING:
                     anim_id = PlayWifiAnim(ws, 0);
                     one_shot = false;
+                    phase = WIFI_OVERLAY;
+                    break;
+                case WifiManager::WIFI_STATUS_SCANNING:
+                    if (prev_ws == WifiManager::WIFI_STATUS_CONNECTED)
+                    {
+                        // 从已连接变成扫描 = 断连了，先播断开动画
+                        anim_id = PlayWifiAnim(WifiManager::WIFI_STATUS_DISCONNECTED, 1);
+                        one_shot = true;
+                    }
+                    else
+                    {
+                        anim_id = PlayWifiAnim(ws, 0);
+                        one_shot = false;
+                    }
                     phase = WIFI_OVERLAY;
                     break;
                 case WifiManager::WIFI_STATUS_CONNECTED:
