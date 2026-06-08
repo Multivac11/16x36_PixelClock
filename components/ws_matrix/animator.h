@@ -21,6 +21,7 @@ class Animator
         desc_ = desc;
         current_frame_ = 0;
         last_tick_ms_ = 0;
+        played_count_ = 0;
         playing_ = (desc != nullptr);
     }
 
@@ -41,6 +42,7 @@ class Animator
         pos_y_ = y;
     }
     void SetBrightness(uint8_t b) { brightness_ = b; }
+    void SetPlayCount(uint16_t count) { play_count_ = count; }
 
     // 只检查计时、推进帧索引，不绘制。返回 true 表示帧号变了
     bool AdvanceFrame(uint32_t now_ms)
@@ -54,7 +56,17 @@ class Animator
         if (now_ms - last_tick_ms_ >= desc_->interval_ms)
         {
             last_tick_ms_ = now_ms;
+            bool wrapped = (desc_->frame_count > 0 && current_frame_ == desc_->frame_count - 1);
             current_frame_ = (current_frame_ + 1) % desc_->frame_count;
+            if (wrapped && play_count_ > 0)
+            {
+                played_count_++;
+                if (played_count_ >= play_count_)
+                {
+                    playing_ = false;
+                    current_frame_ = desc_->frame_count - 1;
+                }
+            }
             return true;
         }
         return false;
@@ -85,4 +97,6 @@ class Animator
     bool playing_ = false;
     int16_t pos_x_ = 0, pos_y_ = 0;
     uint8_t brightness_ = 255;
+    uint16_t play_count_ = 0;
+    uint16_t played_count_ = 0;
 };

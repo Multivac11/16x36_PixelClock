@@ -42,7 +42,8 @@ class SceneManager
                      uint8_t frame_h,
                      uint8_t frame_count,
                      uint16_t interval_ms,
-                     uint8_t brightness = 255);
+                     uint8_t brightness = 255,
+                     uint16_t play_count = 0);
 
     void SetAnimPosition(int idx, int16_t x, int16_t y);
 

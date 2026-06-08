@@ -59,7 +59,9 @@ void SceneManager::UIShowTaskBody()
 {
     auto& gfx = MatrixHal::GetInstance().Gfx();
 
-    int id = AddAnimation("fire_anim_5f_16x16.bin", 0, 0, 16, 16, 5, 100, 60);
+    int id = AddAnimation("wifi/wifi_disconnected_anim_8f_16x16.bin", 0, 0, 16, 16, 8, 70, 60, 1);
+
+    // int id = AddAnimation("fire_anim_5f_16x16.bin", 0, 0, 16, 16, 5, 100, 60);
     if (id < 0)
     {
         ESP_LOGE(TAG, "Failed to load fire animation");
@@ -183,7 +185,8 @@ int SceneManager::AddAnimation(const char* filename,
                                uint8_t frame_h,
                                uint8_t frame_count,
                                uint16_t interval_ms,
-                               uint8_t brightness)
+                               uint8_t brightness,
+                               uint16_t play_count)
 {
     auto* sd = SPIBusManager::GetInstance().GetDeviceByCSPin<SDCard>(GPIO_NUM_14);
     if (!sd)
@@ -232,6 +235,7 @@ int SceneManager::AddAnimation(const char* filename,
     slots_[slot].animator.SetAnimation(&slots_[slot].desc);
     slots_[slot].animator.SetPosition(x, y);
     slots_[slot].animator.SetBrightness(brightness);
+    slots_[slot].animator.SetPlayCount(play_count);
     slots_[slot].animator.Play();
     slots_[slot].active = true;
 
