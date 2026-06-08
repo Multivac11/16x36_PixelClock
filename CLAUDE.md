@@ -48,7 +48,7 @@ app_main
   │     ├── WifiManager  STA 模式连接/扫描，NVS 凭据存储
   │     └── WsServer     HTTP + WebSocket 服务器，提供配网页面
   └── SceneManager      LED 矩阵显示管理
-        ├── MatrixHal    WS2812 灯带驱动（RMT，GPIO 16），含亮度 LUT
+        ├── MatrixHal    WS2812 灯带驱动（RMT，GPIO 17），含亮度 LUT
         ├── GfxDriver    36x16 像素帧缓冲区，含绘图基元（5x7 字体、几何图形）
         └── Animator     逐帧 RGB 位图播放器
 ```
@@ -115,8 +115,7 @@ SD 卡存储的 `.bin` 文件为原始 RGB 帧数据拼接，**不是真正的 G
 | 47, 48 | I2C SCL/SDA |
 | 11, 12, 13 | SPI MOSI/CLK/MISO |
 | 14 | SD 卡 CS |
-| 16 | WS2812 灯带 (RMT) |
-| 17 | 备用 |
+| 17 | WS2812 灯带 (RMT) |
 | 41, 40, 39 | 按键 key1/2/3 |
 | 3, 46 | 状态 LED |
 | 10 | 蜂鸣器 |
@@ -125,8 +124,8 @@ SD 卡存储的 `.bin` 文件为原始 RGB 帧数据拼接，**不是真正的 G
 ### 关键数据流
 
 1. **WiFi 配网**：`ApWifi` 启动 AP 模式 → 通过 HTTP 提供 `apcfg.html`（来自 SPIFFS `html` 分区）→ 用户选择 SSID/密码 → WebSocket 传递凭据 → `WifiManager` 保存到 NVS 并以 STA 模式连接。
-2. **显示刷新**：`SceneManager::Tick()` 每帧运行 — 每个 `AnimationSlot` 持有一个 `Animator`，从 SD 卡加载的 RGB 位图缓冲区播放，绘制到 `GfxDriver` 帧缓冲区，然后通过 `MatrixHal::Refresh()` 刷新到 WS2812。
-3. **动画播放**：`SceneManager::AddAnimation()` 从 SD 卡 (`/sdcard/gif/<filename>`) 加载原始 RGB 帧数据到 32KB RAM 缓冲区，然后 `Animator::Tick()` 按配置的帧间隔逐帧切换。
+2. **显示刷新**：`SceneManager::Tick()` 每 20ms 运行 — 收集来自 `InvalidateRect` 和动画切帧的脏区 → `gfx.clear(背景色)` → 逐个 `DrawCurrentFrame()` 绘制动图 → `RefreshArea(合并脏区)` 推到 WS2812。背景变化时走全屏 `Refresh()`，其余情况局部刷新。
+3. **动画播放**：`SceneManager::AddAnimation()` 从 SD 卡 (`/sdcard/gif/<filename>`) 加载原始 RGB 帧数据到 32KB RAM 缓冲区。`Animator::AdvanceFrame()` 只计时推帧号，`DrawCurrentFrame()` 只绘制，两者在 `Tick()` 中分别调用。
 
 ### 分区布局
 
