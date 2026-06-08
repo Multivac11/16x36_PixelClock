@@ -111,6 +111,28 @@ int SceneManager::PlayWifiAnim(WifiManager::WifiStatus status, uint16_t play_cou
     return AddAnimation(filename, x, y, fw, fh, fc, interval, 60, play_count);
 }
 
+void SceneManager::UIshow()
+{
+    auto& gfx = MatrixHal::GetInstance().Gfx();
+    static uint32_t last_sec = 0;
+    static uint16_t sec = 0;
+    uint32_t now = xTaskGetTickCount() * portTICK_PERIOD_MS;
+
+    AddAnimation("fire_anim_5f_16x16.bin", 0, 0, 16, 16, 5, 100, 60);
+
+    if (now - last_sec >= 1000)
+    {
+        last_sec = now;
+        char buf[8];
+        snprintf(buf, sizeof(buf), "%03d", (int)(sec % 1000));
+        gfx.fillRect(16, 4, 18, 8, Colors::BLACK);
+        gfx.drawString(16, 4, buf, Colors::WHITE, Colors::BLACK, 1, 60);
+        InvalidateRect(16, 4, 18, 8);
+        sec = (sec + 1) % 1000;
+    }
+    vTaskDelay(pdMS_TO_TICKS(50));
+}
+
 void SceneManager::UIShowTaskBody()
 {
     auto& gfx = MatrixHal::GetInstance().Gfx();
@@ -262,30 +284,12 @@ void SceneManager::UIShowTaskBody()
                 ip_scroll -= 2;
                 if (ip_scroll < -(int)strlen(disp) * 6) ip_scroll = MATRIX_WIDTH;
             }
+            vTaskDelay(pdMS_TO_TICKS(50));
         }
-
-        if (phase == NORMAL_UI)
+        else if (phase == NORMAL_UI)
         {
-            static uint32_t last_sec = 0;
-            static uint16_t sec = 0;
-            uint32_t now = xTaskGetTickCount() * portTICK_PERIOD_MS;
-
-            // 火苗动画（AddAnimation 自动检测重复，不会反复加载）
-            AddAnimation("fire_anim_5f_16x16.bin", 0, 0, 16, 16, 5, 100, 60);
-
-            if (now - last_sec >= 1000)
-            {
-                last_sec = now;
-                char buf[8];
-                snprintf(buf, sizeof(buf), "%03d", (int)(sec % 1000));
-                gfx.fillRect(16, 4, 18, 8, Colors::BLACK);
-                gfx.drawString(16, 4, buf, Colors::WHITE, Colors::BLACK, 1, 60);
-                InvalidateRect(16, 4, 18, 8);
-                sec = (sec + 1) % 1000;
-            }
+            UIshow();
         }
-
-        vTaskDelay(pdMS_TO_TICKS(50));
     }
 }
 

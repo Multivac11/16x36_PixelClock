@@ -75,6 +75,8 @@ class SceneManager
 
     void UIShowTaskBody();
 
+    void UIshow();
+
     void WIFIStatusListenerTaskBody();
 
     int PlayWifiAnim(WifiManager::WifiStatus status, uint16_t play_count);
