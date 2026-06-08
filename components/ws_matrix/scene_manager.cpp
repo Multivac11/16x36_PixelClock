@@ -113,24 +113,7 @@ int SceneManager::PlayWifiAnim(WifiManager::WifiStatus status, uint16_t play_cou
 
 void SceneManager::UIshow()
 {
-    auto& gfx = MatrixHal::GetInstance().Gfx();
-    static uint32_t last_sec = 0;
-    static uint16_t sec = 0;
-    uint32_t now = xTaskGetTickCount() * portTICK_PERIOD_MS;
-
-    AddAnimation("fire_anim_5f_16x16.bin", 0, 0, 16, 16, 5, 100, 60);
-
-    if (now - last_sec >= 1000)
-    {
-        last_sec = now;
-        char buf[8];
-        snprintf(buf, sizeof(buf), "%03d", (int)(sec % 1000));
-        gfx.fillRect(16, 4, 18, 8, Colors::BLACK);
-        gfx.drawString(16, 4, buf, Colors::WHITE, Colors::BLACK, 1, 60);
-        InvalidateRect(16, 4, 18, 8);
-        sec = (sec + 1) % 1000;
-    }
-    vTaskDelay(pdMS_TO_TICKS(50));
+    TestUI::GetInstance().Test();
 }
 
 void SceneManager::UIShowTaskBody()
@@ -286,7 +269,8 @@ void SceneManager::UIShowTaskBody()
             }
             vTaskDelay(pdMS_TO_TICKS(50));
         }
-        else if (phase == NORMAL_UI)
+
+        if (phase == NORMAL_UI)
         {
             UIshow();
         }

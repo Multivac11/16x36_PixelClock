@@ -6,6 +6,7 @@
 #include "freertos/task.h"
 #include "matrix_hal.h"
 #include "spi_bus.h"
+#include "testui.h"
 #include "wifi_manager.h"
 
 #define ANIM_DIR "/sdcard/gif"

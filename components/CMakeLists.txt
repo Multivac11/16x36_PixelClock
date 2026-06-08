@@ -15,6 +15,7 @@ set(src_dirs
     audio_capture
     light_sensor
     ws_matrix
+	ws_matrix/uis
     wifi_manager
 )
 
@@ -35,6 +36,7 @@ set(include_dirs
     audio_capture
     light_sensor
     ws_matrix
+	ws_matrix/uis
     wifi_manager
 )
 
