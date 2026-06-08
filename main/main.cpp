@@ -17,6 +17,6 @@ extern "C" void app_main(void)
     DeviceInit::GetInstance().Init();
     LightSensor::GetInstance().InitLightSensor();
     AudioCapture::GetInstance().InitAudioCapture();
-    ApWifi::GetInstance().ApWifiInit();
     SceneManager::GetInstance().InitSceneManager();
+    ApWifi::GetInstance().ApWifiInit();
 }

@@ -28,6 +28,7 @@ class SceneManager
         Animator animator;
         AnimationDesc desc{};
         alignas(4) uint8_t buffer[MAX_ANIM_BYTES_PER_SPRITE];
+        char filename[128] = {};
         bool active = false;
     };
 
@@ -76,6 +77,8 @@ class SceneManager
 
     void WIFIStatusListenerTaskBody();
 
+    int PlayWifiAnim(WifiManager::WifiStatus status, uint16_t play_count);
+
    private:
     SceneManager() = default;
 
@@ -90,4 +93,6 @@ class SceneManager
 
     bool fb_dirty_ = false;
     int dirty_x1_ = 0, dirty_y1_ = 0, dirty_x2_ = 0, dirty_y2_ = 0;
+
+    QueueHandle_t ui_queue_ = nullptr;
 };

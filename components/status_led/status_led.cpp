@@ -46,12 +46,14 @@ void StatusLed::GetStatusTask(void *pvParameters)
 
 void StatusLed::WifiListener()
 {
-    QueueHandle_t q = xQueueCreate(1, sizeof(WifiManager::WifiStatus));
+    QueueHandle_t q = xQueueCreate(1, sizeof(WifiManager::WifiStatusInfo));
     WifiManager::GetInstance().RegisterListener(q);
+    WifiManager::WifiStatusInfo info;
     while (true)
     {
-        if (xQueueReceive(q, &wifi_status_, portMAX_DELAY) == pdTRUE)
+        if (xQueueReceive(q, &info, portMAX_DELAY) == pdTRUE)
         {
+            wifi_status_ = info.status;
             ESP_LOGW("StatusLed", "NetworkLedStatus %d", wifi_status_);
         }
     }
@@ -62,13 +64,11 @@ void StatusLed::SystemLedStatus()
     while (true)
     {
         if (system_led_status_ == STATUS_SYSTEM_NORMAL)
-        {
             SystemNormal();
-        }
         else if (system_led_status_ == STATUS_SYSTEM_ERROR)
-        {
             SystemError();
-        }
+        else
+            vTaskDelay(pdMS_TO_TICKS(500));
     }
 }
 
@@ -76,21 +76,23 @@ void StatusLed::WifiStatus()
 {
     while (true)
     {
-        if (wifi_status_ == WifiManager::WifiStatus::WIFI_STATUS_DISCONNECTED)
+        switch (wifi_status_)
         {
-            WifiDisconnected();
-        }
-        else if (wifi_status_ == WifiManager::WifiStatus::WIFI_STATUS_CONNECTED)
-        {
-            WifiConnected();
-        }
-        else if (wifi_status_ == WifiManager::WifiStatus::WIFI_STATUS_APMODE)
-        {
-            WifiAPmode();
-        }
-        else if (wifi_status_ == WifiManager::WifiStatus::WIFI_STATUS_SCANNING)
-        {
-            WifiScanning();
+            case WifiManager::WifiStatus::WIFI_STATUS_DISCONNECTED:
+                WifiDisconnected();
+                break;
+            case WifiManager::WifiStatus::WIFI_STATUS_CONNECTED:
+                WifiConnected();
+                break;
+            case WifiManager::WifiStatus::WIFI_STATUS_APMODE:
+                WifiAPmode();
+                break;
+            case WifiManager::WifiStatus::WIFI_STATUS_SCANNING:
+                WifiScanning();
+                break;
+            default:
+                vTaskDelay(pdMS_TO_TICKS(500));
+                break;
         }
     }
 }

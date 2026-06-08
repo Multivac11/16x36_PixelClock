@@ -50,6 +50,12 @@ class WifiManager
         WIFI_STATUS_DISCONNECTED = 5,    // 已连接的WiFi断开
     };
 
+    struct WifiStatusInfo
+    {
+        WifiStatus status;
+        char ip[16];  // 点分十进制 IP，未获取时为空串
+    };
+
     typedef std::function<void(int num, const wifi_ap_record_t *records)> WifiScanCallback;
 
     typedef std::function<void()> DisconnectCallback;
@@ -83,6 +89,9 @@ class WifiManager
     bool UnregisterListener(QueueHandle_t queue);
 
     void SetStatus(WifiStatus status);
+    void SetStatusIP(const char* ip);
+    WifiStatus GetStatus() const { return info_.status; }
+    const WifiStatusInfo& GetStatusInfo() const { return info_; }
 
    private:
     struct ScanTaskParams
@@ -103,7 +112,7 @@ class WifiManager
     void WriteWifiList(const std::vector<WifiCredential> &list);
 
    private:
-    WifiStatus status_ = WIFI_STATUS_DISCONNECTED;
+    WifiStatusInfo info_ = {WIFI_STATUS_DISCONNECTED, {}};
 
     QueueHandle_t queue_ = nullptr;
 

@@ -64,6 +64,11 @@ void ApWifi::AutoConnectLoop()
         esp_wifi_set_mode(WIFI_MODE_STA);
     }
     esp_err_t err = esp_wifi_start();
+    if (err == ESP_ERR_WIFI_STOP_STATE)
+    {
+        vTaskDelay(pdMS_TO_TICKS(200));
+        err = esp_wifi_start();
+    }
     if (err != ESP_OK && err != ESP_ERR_INVALID_STATE)
     {
         ESP_LOGE("ApWifi", "esp_wifi_start failed: %s", esp_err_to_name(err));
@@ -303,10 +308,10 @@ void ApWifi::ApWifiInit()
     auto_connect_exit_sem_ = xSemaphoreCreateBinary();
 
     /* 上电即启动自动连接 */
-    xTaskCreatePinnedToCore(AutoConnectTask, "AutoConnect", 8192, this, 5, &auto_connect_task_handle_, 0);
+    xTaskCreatePinnedToCore(AutoConnectTask, "AutoConnect", 8192, this, 5, &auto_connect_task_handle_, 1);
 
-    xTaskCreatePinnedToCore(ApWifiTask, "ApWifiTask", 4096, nullptr, 5, nullptr, 0);
-    xTaskCreatePinnedToCore(KeyListenerTask, "KeyListenerTask", 4096, this, 5, nullptr, 0);
+    xTaskCreatePinnedToCore(ApWifiTask, "ApWifiTask", 4096, nullptr, 5, nullptr, 1);
+    xTaskCreatePinnedToCore(KeyListenerTask, "KeyListenerTask", 4096, this, 5, nullptr, 1);
 
     /* ---------- 注册断线重连回调 ---------- */
     WifiManager::GetInstance().SetDisconnectCallback([this]() {
@@ -424,13 +429,12 @@ void ApWifi::EnterApMode()
         xSemaphoreTake(auto_connect_exit_sem_, pdMS_TO_TICKS(5000));
         auto_connect_task_handle_ = nullptr;
     }
-    ap_mode_requested_ = false;
-
     /* 清空上次配网结果缓存 */
     has_pending_result_ = false;
     pending_result_json_[0] = '\0';
 
     WifiManager::GetInstance().WifiManagerAp();
+    // ap_mode_requested_ = false;
     WsServer::WsServerConfig config = {};
     config.html_code = html_code_;
     config.receive_fn = WebSockerReceiveHandle;

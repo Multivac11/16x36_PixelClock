@@ -79,9 +79,10 @@ void WifiManager::HandleEvent(esp_event_base_t event_base, int32_t event_id, voi
         {
             case IP_EVENT_STA_GOT_IP: {
                 ip_event_got_ip_t *event = (ip_event_got_ip_t *)event_data;
-                ESP_LOGI("WifiManager", "IP_EVENT_STA_GOT_IP");
-                ESP_LOGI("WifiManager", "  IP: " IPSTR ", Mask: " IPSTR ", GW: " IPSTR, IP2STR(&event->ip_info.ip),
-                         IP2STR(&event->ip_info.netmask), IP2STR(&event->ip_info.gw));
+                char ip[16];
+                snprintf(ip, sizeof(ip), IPSTR, IP2STR(&event->ip_info.ip));
+                ESP_LOGI("WifiManager", "IP_EVENT_STA_GOT_IP: %s", ip);
+                SetStatusIP(ip);
                 break;
             }
             default:
@@ -92,16 +93,38 @@ void WifiManager::HandleEvent(esp_event_base_t event_base, int32_t event_id, voi
 
 void WifiManager::SetStatus(WifiStatus status)
 {
-    if (status_ != status)
+    if (info_.status != status)
     {
         ESP_LOGW("WifiManager", "SetStatus %d", status);
-        status_ = status;
+        info_.status = status;
+        info_.ip[0] = '\0';
         for (int i = 0; i < listener_count_; ++i)
         {
             if (listeners_[i])
             {
-                xQueueOverwrite(listeners_[i], &status_);
+                xQueueOverwrite(listeners_[i], &info_);
             }
+        }
+    }
+}
+
+void WifiManager::SetStatusIP(const char* ip)
+{
+    if (ip)
+    {
+        strncpy(info_.ip, ip, sizeof(info_.ip) - 1);
+        info_.ip[sizeof(info_.ip) - 1] = '\0';
+    }
+    else
+    {
+        info_.ip[0] = '\0';
+    }
+    // 通知监听者 IP 更新
+    for (int i = 0; i < listener_count_; ++i)
+    {
+        if (listeners_[i])
+        {
+            xQueueOverwrite(listeners_[i], &info_);
         }
     }
 }
@@ -135,7 +158,7 @@ bool WifiManager::UnregisterListener(QueueHandle_t queue)
 
 void WifiManager::WifiManagerInit()
 {
-    queue_ = xQueueCreate(1, sizeof(WifiStatus));
+    queue_ = xQueueCreate(1, sizeof(WifiStatusInfo));
     ESP_ERROR_CHECK(nvs_flash_init());
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
@@ -235,6 +258,7 @@ void WifiManager::WifiManagerStop()
 {
     connecting_ = false;
     esp_wifi_stop();
+    SetStatus(WIFI_STATUS_DISCONNECTED);
 }
 
 void WifiManager::ScanTask(void *pvParameters)
@@ -250,10 +274,13 @@ void WifiManager::ScanTask(void *pvParameters)
 
 void WifiManager::ScanWifi(WifiScanCallback callback)
 {
+    ESP_LOGI("WifiManager", "ScanWifi enter");
     uint16_t ap_count = 0;
     uint16_t ap_num = 20;
     auto *records = new wifi_ap_record_t[ap_num];
-    esp_wifi_scan_start(NULL, true);
+    ESP_LOGI("WifiManager", "esp_wifi_scan_start begin...");
+    esp_err_t ret = esp_wifi_scan_start(NULL, true);
+    ESP_LOGI("WifiManager", "esp_wifi_scan_start done, ret=%d", ret);
     esp_wifi_scan_get_ap_num(&ap_count);
     esp_wifi_scan_get_ap_records(&ap_num, records);
     ESP_LOGI("WifiManager", "ap_count: %d,actual ap num: %d", ap_count, ap_num);
@@ -272,9 +299,18 @@ bool WifiManager::WifiManagerScan(WifiScanCallback callback)
     {
         esp_wifi_clear_ap_list();
         auto *params = new ScanTaskParams{this, std::move(callback)};
-        xTaskCreatePinnedToCore(ScanTask, "ScanTask", 8192, params, 1, nullptr, 1);
+        BaseType_t ret = xTaskCreatePinnedToCore(ScanTask, "ScanTask", 4096, params, 1, nullptr, 1);
+        if (ret != pdPASS)
+        {
+            ESP_LOGE("WifiManager", "ScanTask create failed: %d", ret);
+            xSemaphoreGive(wifi_scan_semaphore_);
+            delete params;
+            return false;
+        }
+        ESP_LOGI("WifiManager", "ScanTask created OK");
         return true;
     }
+    ESP_LOGW("WifiManager", "Scan semaphore busy!");
     return false;
 }
 
