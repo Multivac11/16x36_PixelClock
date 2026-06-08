@@ -52,6 +52,8 @@ void ApWifi::AutoConnectTask(void *pvParameters)
 
 void ApWifi::AutoConnectLoop()
 {
+    bool found_saved_wifi = false;
+
     /* 确保 WiFi 处于 STA 模式且已启动（断线重连时可能被 stop） */
     wifi_mode_t current_mode;
     esp_wifi_get_mode(&current_mode);
@@ -67,8 +69,8 @@ void ApWifi::AutoConnectLoop()
         ESP_LOGE("ApWifi", "esp_wifi_start failed: %s", esp_err_to_name(err));
         goto exit;
     }
-    vTaskDelay(pdMS_TO_TICKS(200));
     WifiManager::GetInstance().SetStatus(WifiManager::WIFI_STATUS_SCANNING);
+    vTaskDelay(pdMS_TO_TICKS(200));
 
     for (int round = 0; round < AUTO_CONNECT_MAX_ROUNDS; ++round)
     {
@@ -158,6 +160,7 @@ void ApWifi::AutoConnectLoop()
 
             if (found)
             {
+                found_saved_wifi = true;
                 ESP_LOGI("ApWifi", "Round %d: trying connect to %s", round + 1, cred.ssid);
                 WifiManager::GetInstance().WifiManagerConnect(cred.ssid, cred.password);
 
@@ -187,7 +190,18 @@ void ApWifi::AutoConnectLoop()
     /* 5 轮后仍未连上 */
     if (!ap_mode_requested_)
     {
-        ESP_LOGI("ApWifi", "Auto connect failed after %d rounds, stopping WiFi.", AUTO_CONNECT_MAX_ROUNDS);
+        if (found_saved_wifi)
+        {
+            WifiManager::GetInstance().SetStatus(WifiManager::WIFI_STATUS_CONNECT_FAILED);
+            ESP_LOGI("ApWifi", "Auto connect failed after %d rounds (saved WiFi found but connection failed).",
+                     AUTO_CONNECT_MAX_ROUNDS);
+        }
+        else
+        {
+            WifiManager::GetInstance().SetStatus(WifiManager::WIFI_STATUS_SCAN_FAILED);
+            ESP_LOGI("ApWifi", "Auto connect failed after %d rounds (no saved WiFi found).",
+                     AUTO_CONNECT_MAX_ROUNDS);
+        }
         WifiManager::GetInstance().WifiManagerStop();
     }
 
@@ -224,6 +238,7 @@ void ApWifi::ApWifiTask(void *pvParameters)
             else
             {
                 ESP_LOGW("ApWifi", "Connect failed, notify frontend");
+                WifiManager::GetInstance().SetStatus(WifiManager::WIFI_STATUS_CONNECT_FAILED);
                 cJSON_AddStringToObject(resp, "connect_status", "fail");
             }
 

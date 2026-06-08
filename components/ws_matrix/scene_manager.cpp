@@ -7,6 +7,7 @@ void SceneManager::InitSceneManager()
     MatrixHal::GetInstance().MatrixHalInit();
     xTaskCreatePinnedToCore(RenderTask, "RenderTask", 8192, this, 1, nullptr, 1);
     SplashScreen();
+    xTaskCreatePinnedToCore(WIFIStatusListenerTask, "WIFIStatusListenerTask", 8192, this, 1, nullptr, 1);
     xTaskCreatePinnedToCore(UIShowTask, "UISIShowTask", 8192, this, 1, nullptr, 1);
 }
 
@@ -55,6 +56,11 @@ void SceneManager::UIShowTask(void* pv)
     static_cast<SceneManager*>(pv)->UIShowTaskBody();
 }
 
+void SceneManager::WIFIStatusListenerTask(void* pv)
+{
+    static_cast<SceneManager*>(pv)->WIFIStatusListenerTaskBody();
+}
+
 void SceneManager::UIShowTaskBody()
 {
     auto& gfx = MatrixHal::GetInstance().Gfx();
@@ -78,6 +84,20 @@ void SceneManager::UIShowTaskBody()
         InvalidateRect(16, 4, 18, 8);
         vTaskDelay(pdMS_TO_TICKS(1000));
         sec = (sec + 1) % 1000;
+    }
+}
+
+void SceneManager::WIFIStatusListenerTaskBody()
+{
+    QueueHandle_t q = xQueueCreate(1, sizeof(WifiManager::WifiStatus));
+    WifiManager::GetInstance().RegisterListener(q);
+    WifiManager::WifiStatus wifi_status;
+    while (true)
+    {
+        if (xQueueReceive(q, &wifi_status, portMAX_DELAY) == pdTRUE)
+        {
+            ESP_LOGW(TAG, "WifiStatus: %d", wifi_status);
+        }
     }
 }
 

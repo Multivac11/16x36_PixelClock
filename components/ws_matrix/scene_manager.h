@@ -1,10 +1,12 @@
 #pragma once
+
 #include "animator.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "matrix_hal.h"
 #include "spi_bus.h"
+#include "wifi_manager.h"
 
 #define ANIM_DIR "/sdcard/gif"
 #define IMG_DIR "/sdcard/img"
@@ -66,9 +68,13 @@ class SceneManager
 
     static void UIShowTask(void* pv);
 
+    static void WIFIStatusListenerTask(void* pv);
+
     void RenderTaskBody();
 
     void UIShowTaskBody();
+
+    void WIFIStatusListenerTaskBody();
 
    private:
     SceneManager() = default;

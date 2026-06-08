@@ -42,10 +42,12 @@ class WifiManager
 
     enum WifiStatus
     {
-        WIFI_STATUS_DISCONNECTED = 0,  // 未连接
-        WIFI_STATUS_SCANNING = 1,      // 扫描连接中（上电5轮 + 断连重连）
-        WIFI_STATUS_CONNECTED = 2,     // 已连接
-        WIFI_STATUS_APMODE = 3,        // AP配网中
+        WIFI_STATUS_APMODE = 0,          // AP配网模式
+        WIFI_STATUS_SCAN_FAILED = 1,     // 扫描5轮，未找到已保存的WiFi
+        WIFI_STATUS_SCANNING = 2,        // 扫描/连接中
+        WIFI_STATUS_CONNECT_FAILED = 3,  // 找到已保存WiFi但连接失败
+        WIFI_STATUS_CONNECTED = 4,       // 已连接
+        WIFI_STATUS_DISCONNECTED = 5,    // 已连接的WiFi断开
     };
 
     typedef std::function<void(int num, const wifi_ap_record_t *records)> WifiScanCallback;

@@ -16,15 +16,12 @@ void WifiManager::HandleEvent(esp_event_base_t event_base, int32_t event_id, voi
         switch (event_id)
         {
             case WIFI_EVENT_STA_START:
-                SetStatus(WIFI_STATUS_DISCONNECTED);
                 break;
 
             case WIFI_EVENT_STA_STOP:
-                SetStatus(WIFI_STATUS_DISCONNECTED);
                 break;
 
             case WIFI_EVENT_STA_DISCONNECTED:
-                SetStatus(WIFI_STATUS_DISCONNECTED);
                 if (connecting_)
                 {
                     if (connect_retry_count_ < MAX_CONNECT_RETRY_COUNT)
@@ -42,6 +39,7 @@ void WifiManager::HandleEvent(esp_event_base_t event_base, int32_t event_id, voi
                 }
                 else
                 {
+                    SetStatus(WIFI_STATUS_DISCONNECTED);
                     ESP_LOGW("WifiManager", "STA disconnected unexpectedly");
                     if (disconnect_cb_)
                     {
@@ -62,13 +60,11 @@ void WifiManager::HandleEvent(esp_event_base_t event_base, int32_t event_id, voi
                 break;
 
             case WIFI_EVENT_AP_STACONNECTED:
-                SetStatus(WIFI_STATUS_CONNECTED);
-                ESP_LOGI("WifiManager", "ap connected.");
+                ESP_LOGI("WifiManager", "ap client connected.");
                 break;
 
             case WIFI_EVENT_AP_STADISCONNECTED:
-                SetStatus(WIFI_STATUS_DISCONNECTED);
-                ESP_LOGI("WifiManager", "ap disconnected.");
+                ESP_LOGI("WifiManager", "ap client disconnected.");
                 break;
 
             case WIFI_EVENT_AP_START:
@@ -239,7 +235,6 @@ void WifiManager::WifiManagerStop()
 {
     connecting_ = false;
     esp_wifi_stop();
-    SetStatus(WIFI_STATUS_DISCONNECTED);
 }
 
 void WifiManager::ScanTask(void *pvParameters)
