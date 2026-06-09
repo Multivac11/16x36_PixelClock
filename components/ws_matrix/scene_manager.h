@@ -1,12 +1,14 @@
 #pragma once
 
+#include <memory>
+
 #include "animator.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "matrix_hal.h"
 #include "spi_bus.h"
-#include "testui.h"
+#include "uis/page.h"
 #include "wifi_manager.h"
 
 #define ANIM_DIR "/sdcard/gif"
@@ -76,18 +78,21 @@ class SceneManager
 
     void UIShowTaskBody();
 
-    void UIshow();
-
     void WIFIStatusListenerTaskBody();
 
     int PlayWifiAnim(WifiManager::WifiStatus status, uint16_t play_count);
 
+    QueueHandle_t GetUIQueue() const { return ui_queue_; }
+    bool IsAnimPlaying(int idx) const;
+
    private:
     SceneManager() = default;
-
     ~SceneManager() = default;
 
     bool valid(int idx) const;
+
+    std::unique_ptr<Page> CreateNextPage();
+    void CheckWifiStateChange();
 
     AnimationSlot slots_[MAX_ANIMATIONS];
 
@@ -98,4 +103,7 @@ class SceneManager
     int dirty_x1_ = 0, dirty_y1_ = 0, dirty_x2_ = 0, dirty_y2_ = 0;
 
     QueueHandle_t ui_queue_ = nullptr;
+
+    std::unique_ptr<Page> current_page_;
+    char ip_str_[16] = {};
 };

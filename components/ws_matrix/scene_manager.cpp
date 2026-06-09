@@ -1,6 +1,9 @@
 #include "scene_manager.h"
 
 #include "esp_netif.h"
+#include "uis/page_show_ip.h"
+#include "uis/page_test.h"
+#include "uis/page_wifi_overlay.h"
 
 static const char* TAG = "SceneManager";
 
@@ -111,169 +114,81 @@ int SceneManager::PlayWifiAnim(WifiManager::WifiStatus status, uint16_t play_cou
     return AddAnimation(filename, x, y, fw, fh, fc, interval, 60, play_count);
 }
 
-void SceneManager::UIshow()
-{
-    TestUI::GetInstance().Test();
-}
-
 void SceneManager::UIShowTaskBody()
 {
-    auto& gfx = MatrixHal::GetInstance().Gfx();
-
-    bool in_ap_mode = false;
-    int anim_id = -1;
-    WifiManager::WifiStatus ws = WifiManager::WifiStatus::WIFI_STATUS_SCANNING;
-    WifiManager::WifiStatus prev_ws = ws;
-    enum Phase
-    {
-        WIFI_OVERLAY,
-        SHOW_IP,
-        NORMAL_UI
-    };
-    Phase phase = WIFI_OVERLAY;
-    bool one_shot = false;
-
-    // 开机：先显示扫描动画（loop）
-    anim_id = PlayWifiAnim(ws, 0);
-
-    char ip_str[16] = {};
-    int ip_scroll = 0;
-    uint32_t ip_enter_ms = 0;
+    // 开机 → WifiOverlayPage
+    current_page_ = std::make_unique<WifiOverlayPage>();
 
     while (true)
     {
-        // 从内部队列取 WiFi 状态（WIFIStatusListenerTaskBody 写入）
-        WifiManager::WifiStatusInfo info;
-        bool has_new = false;
-        while (xQueueReceive(ui_queue_, &info, 0) == pdTRUE)
+        if (current_page_->Tick())
         {
-            ws = info.status;
-            // 收到 IP 就存下
-            if (info.ip[0]) strncpy(ip_str, info.ip, sizeof(ip_str) - 1);
-            has_new = true;
+            current_page_ = CreateNextPage();
         }
+        CheckWifiStateChange();
+    }
+}
 
-        // 状态没变且 (有动画在播 或 不在 overlay) → 跳过重复通知
-        bool same_status = (ws == prev_ws);
-        if (has_new && same_status && (anim_id >= 0 || phase != WIFI_OVERLAY)) has_new = false;
+bool SceneManager::IsAnimPlaying(int idx) const
+{
+    if (!valid(idx)) return false;
+    return slots_[idx].animator.IsPlaying();
+}
 
-        // 只在没有一次性动画播放时响应新状态，否则暂存
-        if (has_new && !one_shot)
+std::unique_ptr<Page> SceneManager::CreateNextPage()
+{
+    // 根据上一个页面的类型决定下一页
+    Page::Type type = current_page_->GetPageType();
+    if (type == Page::Type::WifiOverlay)
+    {
+        auto* wifiPage = static_cast<WifiOverlayPage*>(current_page_.get());
+        strncpy(ip_str_, wifiPage->GetIP(), sizeof(ip_str_) - 1);
+        if (wifiPage->GetLastStatus() == WifiManager::WIFI_STATUS_CONNECTED)
         {
-            prev_ws = ws;
-            if (ws == WifiManager::WIFI_STATUS_APMODE) in_ap_mode = true;
-            if (ws == WifiManager::WIFI_STATUS_CONNECTED) in_ap_mode = false;
-
-            if (anim_id >= 0)
-            {
-                RemoveAnimation(anim_id);
-                anim_id = -1;
-            }
-            // 防止 NORMAL_UI 留下的动画叠在上面
-            for (int i = 0; i < MAX_ANIMATIONS; i++)
-            {
-                if (slots_[i].active) RemoveAnimation(i);
-            }
-            gfx.clear(Colors::BLACK);
-            InvalidateRect(0, 0, MATRIX_WIDTH, MATRIX_HEIGHT);
-
-            switch (ws)
-            {
-                case WifiManager::WIFI_STATUS_APMODE:
-                    anim_id = PlayWifiAnim(ws, 0);
-                    one_shot = false;
-                    phase = WIFI_OVERLAY;
-                    break;
-                case WifiManager::WIFI_STATUS_SCANNING:
-                    if (prev_ws == WifiManager::WIFI_STATUS_CONNECTED)
-                    {
-                        // 从已连接变成扫描 = 断连了，先播断开动画
-                        anim_id = PlayWifiAnim(WifiManager::WIFI_STATUS_DISCONNECTED, 1);
-                        one_shot = true;
-                    }
-                    else
-                    {
-                        anim_id = PlayWifiAnim(ws, 0);
-                        one_shot = false;
-                    }
-                    phase = WIFI_OVERLAY;
-                    break;
-                case WifiManager::WIFI_STATUS_CONNECTED:
-                case WifiManager::WIFI_STATUS_CONNECT_FAILED:
-                case WifiManager::WIFI_STATUS_SCAN_FAILED:
-                case WifiManager::WIFI_STATUS_DISCONNECTED:
-                    anim_id = PlayWifiAnim(ws, 1);
-                    one_shot = true;
-                    phase = WIFI_OVERLAY;
-                    break;
-            }
+            ESP_LOGI(TAG, "Page transition: WifiOverlay → ShowIP");
+            return std::make_unique<ShowIPPage>(ip_str_);
         }
+        ESP_LOGI(TAG, "Page transition: WifiOverlay → TestPage");
+        return std::make_unique<TestPage>();
+    }
 
-        // 一次性动画播放完毕 → 决定下一步
-        if (one_shot && anim_id >= 0 && !slots_[anim_id].animator.IsPlaying())
+    if (type == Page::Type::ShowIP)
+    {
+        ESP_LOGI(TAG, "Page transition: ShowIP → TestPage");
+        return std::make_unique<TestPage>();
+    }
+
+    // TestPage 不会主动结束，兜底
+    return std::make_unique<TestPage>();
+}
+
+void SceneManager::CheckWifiStateChange()
+{
+    // 非 WifiOverlayPage 期间，WiFi 状态异常 → 强制切回覆盖层
+    if (current_page_->GetPageType() == Page::Type::WifiOverlay) return;
+
+    WifiManager::WifiStatusInfo info;
+    bool has_other = false;
+    WifiManager::WifiStatusInfo other_info;
+
+    while (xQueueReceive(ui_queue_, &info, 0) == pdTRUE)
+    {
+        if (info.status == WifiManager::WIFI_STATUS_DISCONNECTED ||
+            info.status == WifiManager::WIFI_STATUS_APMODE)
         {
-            RemoveAnimation(anim_id);
-            anim_id = -1;
-            one_shot = false;
-            gfx.clear(Colors::BLACK);
-            InvalidateRect(0, 0, MATRIX_WIDTH, MATRIX_HEIGHT);
-
-            // 处理期间可能已到达的新状态
-            WifiManager::WifiStatusInfo latest = info;
-            while (xQueueReceive(ui_queue_, &latest, 0) == pdTRUE)
-            {
-                ws = latest.status;
-                if (latest.ip[0]) strncpy(ip_str, latest.ip, sizeof(ip_str) - 1);
-            }
-
-            if (ws == WifiManager::WIFI_STATUS_CONNECT_FAILED && in_ap_mode)
-                anim_id = PlayWifiAnim(WifiManager::WIFI_STATUS_APMODE, 0);
-            else if (ws == WifiManager::WIFI_STATUS_CONNECTED)
-            {
-                phase = SHOW_IP;
-                ip_enter_ms = xTaskGetTickCount() * portTICK_PERIOD_MS;
-                ip_scroll = MATRIX_WIDTH;
-            }
-            else if (ws == WifiManager::WIFI_STATUS_SCAN_FAILED || ws == WifiManager::WIFI_STATUS_CONNECT_FAILED ||
-                     ws == WifiManager::WIFI_STATUS_DISCONNECTED)
-                phase = NORMAL_UI;
-            else
-            {
-                if (ws == WifiManager::WIFI_STATUS_SCANNING || ws == WifiManager::WIFI_STATUS_APMODE)
-                {
-                    anim_id = PlayWifiAnim(ws, 0);
-                    phase = WIFI_OVERLAY;
-                }
-            }
+            ESP_LOGI(TAG, "WiFi state changed, forcing overlay");
+            current_page_.reset();
+            current_page_ = std::make_unique<WifiOverlayPage>();
+            return;
         }
+        // 非紧急消息（如 IP 更新）保留最后一条，放回队列给页面消费
+        other_info = info;
+        has_other = true;
+    }
 
-        // SHOW_IP 阶段
-        if (phase == SHOW_IP)
-        {
-            uint32_t now = xTaskGetTickCount() * portTICK_PERIOD_MS;
-            if (now - ip_enter_ms > 7000)
-            {
-                phase = NORMAL_UI;
-                gfx.clear(Colors::BLACK);
-                InvalidateRect(0, 0, MATRIX_WIDTH, MATRIX_HEIGHT);
-            }
-            else
-            {
-                char disp[32];
-                snprintf(disp, sizeof(disp), "IP:%s", ip_str);
-                gfx.fillRect(0, 4, MATRIX_WIDTH, 8, Colors::BLACK);
-                gfx.drawString(ip_scroll, 4, disp, Colors::WHITE, Colors::BLACK, 1, 60);
-                InvalidateRect(0, 4, MATRIX_WIDTH, 8);
-                ip_scroll -= 2;
-                if (ip_scroll < -(int)strlen(disp) * 6) ip_scroll = MATRIX_WIDTH;
-            }
-            vTaskDelay(pdMS_TO_TICKS(50));
-        }
-
-        if (phase == NORMAL_UI)
-        {
-            UIshow();
-        }
+    if (has_other)
+    {
+        xQueueOverwrite(ui_queue_, &other_info);
     }
 }
 
